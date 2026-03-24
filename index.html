@@ -6,11 +6,18 @@
     <title>Medical Shop Ultra-Pro App</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* 🎤 Mic Button & Input UI Fix (100% Guaranteed) */
+        /* 🎤 Mic Button & Input UI Fix */
         .input-group { display: flex !important; flex-direction: row !important; gap: 8px !important; margin-bottom: 10px !important; width: 100% !important; align-items: center !important; }
         .input-group input { flex: 1 !important; min-width: 0 !important; width: 100% !important; margin-bottom: 0 !important; padding: 12px !important; font-size: 16px !important; border: 2px solid #3498db !important; border-radius: 5px !important; }
         .mic-btn { width: 50px !important; height: 50px !important; flex-shrink: 0 !important; background-color: #e8f8f5 !important; border: 2px solid #1abc9c !important; border-radius: 8px !important; font-size: 22px !important; display: flex !important; align-items: center !important; justify-content: center !important; cursor: pointer !important; margin: 0 !important; padding: 0 !important; }
         .mic-btn:active { background-color: #1abc9c !important; color: white !important; }
+
+        /* 📷 Scanner UI Fix (कॅमेरा सेटिंग आणि बटण डिझाईन) */
+        #qr-reader, #qr-reader-purchase { border: 2px solid #ff9800 !important; border-radius: 8px !important; padding: 10px !important; background: #fff !important; }
+        #qr-reader button, #qr-reader-purchase button { background-color: #3498db !important; color: white !important; border: none !important; padding: 10px 15px !important; border-radius: 5px !important; font-weight: bold !important; margin: 5px 2px !important; cursor: pointer !important; font-size: 14px !important; }
+        #qr-reader button:active, #qr-reader-purchase button:active { background-color: #2980b9 !important; }
+        #qr-reader select, #qr-reader-purchase select { padding: 8px !important; border: 2px solid #bdc3c7 !important; border-radius: 5px !important; width: 100% !important; margin-bottom: 10px !important; background-color: #f8f9fa !important; font-size: 14px !important; font-weight: bold !important; }
+        #qr-reader a, #qr-reader-purchase a { color: #e74c3c !important; text-decoration: none !important; font-weight: bold !important; display: block !important; margin-top: 5px !important; }
 
         /* 🖨️ Thermal POS Printer CSS */
         @media print {
@@ -129,7 +136,7 @@
                 </div>
 
                 <button type="button" class="btn-settings" onclick="startScanner()" style="background-color: #ff9800; margin-bottom: 10px;">📷 बारकोड स्कॅन करा</button>
-                <div id="qr-reader" style="width: 100%; display: none; margin-bottom: 10px; border: 2px solid #ff9800; border-radius: 5px; padding: 10px;"></div>
+                <div id="qr-reader" style="width: 100%; display: none; margin-bottom: 10px;"></div>
                 
                 <select id="medicineSelect" onchange="updatePrice()"><option value="">-- औषध निवडा --</option></select>
                 
@@ -222,11 +229,11 @@
         <div class="section-box" style="background-color: #e8f5e9;">
             <h2>📦 एजन्सी बिलानुसार जुना साठा वाढवा</h2>
             <button type="button" class="btn-settings" onclick="startPurchaseScanner()" style="background-color: #4CAF50; margin-bottom: 10px;">📷 बारकोड स्कॅन करा</button>
-            <div id="qr-reader-purchase" style="width: 100%; display: none; margin-bottom: 10px; border: 2px solid #4CAF50; border-radius: 5px; padding: 10px;"></div>
+            <div id="qr-reader-purchase" style="width: 100%; display: none; margin-bottom: 10px;"></div>
             <select id="purchaseMedicineSelect"><option value="">-- यादीतून औषध निवडा --</option></select>
             <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <input type="number" id="purchasePackQty" placeholder="QTY (खरेदी)" min="1" style="flex: 1;">
-                <input type="number" id="purchaseFreeQty" placeholder="FREE QTY" value="0" min="0" style="flex: 1;">
+                <input type="number" id="purchasePackQty" placeholder="QTY" min="1" style="flex: 1;">
+                <input type="number" id="purchaseFreeQty" placeholder="FREE" value="0" min="0" style="flex: 1;">
             </div>
             <button type="button" class="btn-save" onclick="updateStockQty()" style="margin-top: 10px; width: 100%;">साठा वाढवा (+)</button>
         </div>
