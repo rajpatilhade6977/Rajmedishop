@@ -6,10 +6,13 @@
     <title>Medical Shop Ultra-Pro App</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .mic-btn { background: none; border: 1px solid #1abc9c; border-radius: 5px; font-size: 20px; padding: 0 10px; cursor: pointer; background-color: #e8f8f5; }
-        .mic-btn:active { background-color: #1abc9c; color: white; }
-        .input-group { display: flex; gap: 5px; margin-bottom: 10px; width: 100%; }
-        .input-group input { margin-bottom: 0; flex: 1; }
+        /* 🎤 Mic Button & Input UI Fix (100% Guaranteed) */
+        .input-group { display: flex !important; flex-direction: row !important; gap: 8px !important; margin-bottom: 10px !important; width: 100% !important; align-items: center !important; }
+        .input-group input { flex: 1 !important; min-width: 0 !important; width: 100% !important; margin-bottom: 0 !important; padding: 12px !important; font-size: 16px !important; border: 2px solid #3498db !important; border-radius: 5px !important; }
+        .mic-btn { width: 50px !important; height: 50px !important; flex-shrink: 0 !important; background-color: #e8f8f5 !important; border: 2px solid #1abc9c !important; border-radius: 8px !important; font-size: 22px !important; display: flex !important; align-items: center !important; justify-content: center !important; cursor: pointer !important; margin: 0 !important; padding: 0 !important; }
+        .mic-btn:active { background-color: #1abc9c !important; color: white !important; }
+
+        /* 🖨️ Thermal POS Printer CSS */
         @media print {
             body * { visibility: hidden; }
             #invoiceSection, #invoiceSection * { visibility: visible; }
@@ -72,17 +75,27 @@
                 <div style="flex: 1; min-width: 90px; padding: 10px; background: #fef5e7; border-radius: 8px; text-align: center; border: 1px solid #fad7a1;"><h3 style="margin: 0; font-size: 13px;">धोका (Expiry)</h3><h2 id="dashExpiry" style="color: #d35400; margin: 5px 0 0 0; font-size: 20px;">0</h2></div>
             </div>
 
+            <h2 style="color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #f39c12;">🔥 सर्वाधिक विकली जाणारी औषधे (Top 5)</h2>
+            <div style="overflow-x: auto; margin-bottom: 15px;">
+                <table><thead><tr><th>औषधाचे नाव</th><th>विक्री (नग)</th><th>अंदाजे नफा</th></tr></thead><tbody id="topMedsList"></tbody></table>
+            </div>
+
             <div id="alertMessages" style="color: #d32f2f; font-size: 14px; background-color: #fff; padding: 10px; border-radius: 5px; display: none; border: 1px solid #f5b7b1;"></div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;" class="hide-on-print">
+                <button type="button" class="btn-settings" onclick="printDashboard()" style="background-color: #607d8b; flex: 1;">🖨️ रिपोर्ट प्रिंट</button>
+                <button type="button" class="btn-settings" onclick="shareDashboardWhatsApp()" style="background-color: #25D366; flex: 1;">📲 रिपोर्ट WhatsApp</button>
+            </div>
         </div>
 
         <div class="section-box" style="background-color: #e8f5e9;">
-            <h2>📝 आजची बिले</h2>
+            <h2>📝 आजची बिले (Cancel Bill)</h2>
             <div style="overflow-x: auto;">
                 <table><thead><tr><th>ग्राहक / डॉक्टर</th><th>रक्कम</th><th>Action</th></tr></thead><tbody id="todayBillsList"></tbody></table>
             </div>
         </div>
         <div class="section-box" style="background-color: #fff3e0;">
-            <h2>💸 दैनंदिन खर्च</h2>
+            <h2>💸 दैनंदिन खर्च (Daily Expenses)</h2>
             <form id="expenseForm" onsubmit="return false;">
                 <div class="input-group">
                     <input type="text" id="expDesc" placeholder="खर्चाचे कारण (उदा. चहा)" required>
@@ -102,9 +115,18 @@
         <div class="section-box" style="background-color: #e3f2fd;">
             <h2>🛒 जलद बिलिंग (स्मार्ट विक्री)</h2>
             <form id="billingForm" onsubmit="return false;">
-                <div class="input-group"><input type="text" id="customerName" placeholder="ग्राहकाचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('customerName')">🎤</button></div>
-                <div class="input-group"><input type="text" id="customerGstin" placeholder="ग्राहकाचा GSTIN (Optional)" style="border: 1px solid #3498db; background-color: #ebf5fb;"><button type="button" class="mic-btn" onclick="startDictation('customerGstin')">🎤</button></div>
-                <div class="input-group"><input type="text" id="doctorName" placeholder="डॉक्टरांचे नाव (Optional)" style="border: 1px solid #1abc9c; background-color: #e8f8f5;"><button type="button" class="mic-btn" onclick="startDictation('doctorName')">🎤</button></div>
+                <div class="input-group">
+                    <input type="text" id="customerName" placeholder="ग्राहकाचे नाव (Customer Name)" required>
+                    <button type="button" class="mic-btn" onclick="startDictation('customerName')">🎤</button>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="customerGstin" placeholder="ग्राहकाचा GSTIN (Optional)" style="border: 1px solid #3498db; background-color: #ebf5fb;">
+                    <button type="button" class="mic-btn" onclick="startDictation('customerGstin')">🎤</button>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="doctorName" placeholder="डॉक्टरांचे नाव (Optional)" style="border: 1px solid #1abc9c; background-color: #e8f8f5;">
+                    <button type="button" class="mic-btn" onclick="startDictation('doctorName')">🎤</button>
+                </div>
 
                 <button type="button" class="btn-settings" onclick="startScanner()" style="background-color: #ff9800; margin-bottom: 10px;">📷 बारकोड स्कॅन करा</button>
                 <div id="qr-reader" style="width: 100%; display: none; margin-bottom: 10px; border: 2px solid #ff9800; border-radius: 5px; padding: 10px;"></div>
@@ -156,20 +178,29 @@
             <form id="medicineForm" onsubmit="return false;">
                 <input type="hidden" id="editId">
                 
-                <select id="supplierSelect" style="margin-bottom: 10px; font-weight: bold; background: #fff3e0; border: 1px solid #ff9800;">
+                <select id="supplierSelect" style="margin-bottom: 10px; font-weight: bold; background: #fff3e0; border: 1px solid #ff9800; width: 100%;">
                     <option value="">-- सप्लायर निवडा (Optional) --</option>
                 </select>
 
-                <div class="input-group"><input type="text" id="medName" placeholder="औषधाचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('medName')">🎤</button></div>
+                <div class="input-group">
+                    <input type="text" id="medName" placeholder="औषधाचे नाव" required>
+                    <button type="button" class="mic-btn" onclick="startDictation('medName')">🎤</button>
+                </div>
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <input type="text" id="hsnCode" placeholder="HSN कोड" style="flex: 1; border: 1px solid #e91e63;">
                     <select id="unitType" style="flex: 1; font-weight: bold;" required><option value="गोळी (Tab)">💊 गोळी</option><option value="बाटली (Bottle)">🧴 बाटली</option><option value="इंजेक्शन (Inj)">💉 इंजेक्शन</option><option value="मलम (Tube)">मलम</option></select>
                 </div>
-                <div class="input-group"><input type="text" id="saltName" placeholder="घटक / Salt Name"><button type="button" class="mic-btn" onclick="startDictation('saltName')">🎤</button></div>
+                <div class="input-group">
+                    <input type="text" id="saltName" placeholder="घटक / Salt Name">
+                    <button type="button" class="mic-btn" onclick="startDictation('saltName')">🎤</button>
+                </div>
                 <label style="display: block; margin-top: 5px; background: #fff3e0; padding: 10px; border-radius: 5px; border: 1px solid #ff9800; font-weight: bold; color: #d35400;">
                     <input type="checkbox" id="rxRequired" style="transform: scale(1.2); margin-right: 5px;"> ⚠️ हे प्रतिबंधित (Rx) औषध आहे
                 </label>
-                <div class="input-group" style="margin-top: 10px;"><input type="text" id="medCompany" placeholder="कंपनीचे नाव"><button type="button" class="mic-btn" onclick="startDictation('medCompany')">🎤</button></div>
+                <div class="input-group" style="margin-top: 10px;">
+                    <input type="text" id="medCompany" placeholder="कंपनीचे नाव">
+                    <button type="button" class="mic-btn" onclick="startDictation('medCompany')">🎤</button>
+                </div>
                 <input type="text" id="batchNo" placeholder="BATCH NO / बारकोड" style="margin-bottom:10px;">
                 <label style="font-weight: bold; display: block;">EXP.DT (तारीख):</label><input type="date" id="expiryDate" required>
                 
@@ -185,12 +216,26 @@
                         <div style="flex: 1;"><label style="font-size: 12px; font-weight: bold; color: #555;">MRP (१ स्ट्रीप)</label><input type="number" step="0.01" id="packMRP" required></div>
                     </div>
                 </div>
-                <button type="button" class="btn-save" onclick="saveMedicine()">औषध सेव्ह करा (ऑटो-कॅल्क्युलेट)</button>
+                <button type="button" class="btn-save" onclick="saveMedicine()">औषध सेव्ह करा</button>
             </form>
+        </div>
+        <div class="section-box" style="background-color: #e8f5e9;">
+            <h2>📦 एजन्सी बिलानुसार जुना साठा वाढवा</h2>
+            <button type="button" class="btn-settings" onclick="startPurchaseScanner()" style="background-color: #4CAF50; margin-bottom: 10px;">📷 बारकोड स्कॅन करा</button>
+            <div id="qr-reader-purchase" style="width: 100%; display: none; margin-bottom: 10px; border: 2px solid #4CAF50; border-radius: 5px; padding: 10px;"></div>
+            <select id="purchaseMedicineSelect"><option value="">-- यादीतून औषध निवडा --</option></select>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <input type="number" id="purchasePackQty" placeholder="QTY (खरेदी)" min="1" style="flex: 1;">
+                <input type="number" id="purchaseFreeQty" placeholder="FREE QTY" value="0" min="0" style="flex: 1;">
+            </div>
+            <button type="button" class="btn-save" onclick="updateStockQty()" style="margin-top: 10px; width: 100%;">साठा वाढवा (+)</button>
         </div>
         <div class="section-box">
             <h2>📦 उपलब्ध औषधे (Inventory)</h2>
-            <div class="input-group"><input type="text" id="searchInput" onkeyup="searchMedicine()" placeholder="🔍 नाव किंवा बारकोड शोधा..."><button type="button" class="mic-btn" onclick="startDictation('searchInput')">🎤</button></div>
+            <div class="input-group">
+                <input type="text" id="searchInput" onkeyup="searchMedicine()" placeholder="🔍 नाव किंवा बारकोड शोधा...">
+                <button type="button" class="mic-btn" onclick="startDictation('searchInput')">🎤</button>
+            </div>
             <button type="button" class="btn-refresh" onclick="displayMedicines()">रिफ्रेश करा</button>
             <div style="overflow-x: auto;">
                 <table><thead><tr><th>नाव व घटक (HSN)</th><th>एकूण साठा</th><th>१ नग खरेदी/MRP</th><th>Action</th></tr></thead><tbody id="medicineList"></tbody></table>
@@ -199,10 +244,24 @@
     </div>
 
     <div id="ledgerTab" class="tab-content">
+        <div class="section-box" style="background-color: #e0f2f1;" id="staffSectionBox">
+            <h2>👨‍💼 कर्मचारी खातेवही</h2>
+            <form id="staffForm" onsubmit="return false;">
+                <div class="input-group">
+                    <input type="text" id="staffName" placeholder="कर्मचाऱ्याचे नाव" required>
+                    <button type="button" class="mic-btn" onclick="startDictation('staffName')">🎤</button>
+                </div>
+                <div style="display: flex; gap: 10px;"><input type="number" id="staffSalary" placeholder="महिना पगार (₹)" style="flex: 1;"><input type="number" id="staffAdvance" placeholder="सध्याची उचल (₹)" value="0" style="flex: 1;"></div>
+                <button type="button" class="btn-settings" onclick="saveStaff()" style="background-color: #00897b;">कर्मचारी जोडा</button>
+            </form>
+        </div>
         <div class="section-box" style="background-color: #fce4ec;">
-            <h2>📓 ग्राहक उधारी व जमा (Advance)</h2>
+            <h2>📓 ग्राहक उधारी व जमा</h2>
             <form id="customerForm" onsubmit="return false;">
-                <div class="input-group"><input type="text" id="custName" placeholder="ग्राहकाचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('custName')">🎤</button></div>
+                <div class="input-group">
+                    <input type="text" id="custName" placeholder="ग्राहकाचे नाव" required>
+                    <button type="button" class="mic-btn" onclick="startDictation('custName')">🎤</button>
+                </div>
                 <input type="text" id="custPhone" placeholder="मोबाईल नंबर">
                 <input type="number" id="custBalance" placeholder="सुरुवातीची बाकी (₹)" value="0">
                 <button type="button" class="btn-ledger" onclick="saveCustomer()">नवीन ग्राहक जोडा</button>
@@ -211,11 +270,13 @@
                 <table><thead><tr><th>ग्राहक</th><th>बाकी/जमा (₹)</th><th>Action</th></tr></thead><tbody id="customerList"></tbody></table>
             </div>
         </div>
-
         <div class="section-box" style="background-color: #f3e5f5;" id="supplierSectionBox">
             <h2>🚚 सप्लायर देय</h2>
             <form id="supplierForm" onsubmit="return false;">
-                <div class="input-group"><input type="text" id="suppName" placeholder="होलसेलरचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('suppName')">🎤</button></div>
+                <div class="input-group">
+                    <input type="text" id="suppName" placeholder="होलसेलरचे नाव" required>
+                    <button type="button" class="mic-btn" onclick="startDictation('suppName')">🎤</button>
+                </div>
                 <input type="text" id="suppPhone" placeholder="मोबाईल नंबर">
                 <input type="number" id="suppBalance" placeholder="सुरुवातीचे देय (₹)" value="0">
                 <button type="button" class="btn-settings" onclick="saveSupplier()" style="background-color: #8e24aa;">नवीन सप्लायर जोडा</button>
@@ -271,10 +332,7 @@
             <tbody id="invoiceBody"></tbody>
         </table>
 
-        <div id="invDiscountRow" style="text-align: right; padding: 5px 0; font-size: 12px; display: none;">
-            Discount: <span id="invDiscountAmt"></span>
-        </div>
-        
+        <div id="invDiscountRow" style="text-align: right; padding: 5px 0; font-size: 12px; display: none;">Discount: <span id="invDiscountAmt"></span></div>
         <div class="pos-total">Net Amount : <span id="invTotal"></span></div>
 
         <div class="pos-footer">
