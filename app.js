@@ -4,7 +4,7 @@
 var MASTER_ACTIVATION_KEY = "RAJ@2026"; 
 
 // ==========================================
-// 🎤 Voice Typing Logic (माईक - Crash Proof)
+// 🎤 Voice Typing Logic (माईक - English Update)
 // ==========================================
 function startDictation(targetId) {
     try {
@@ -14,7 +14,10 @@ function startDictation(targetId) {
             return;
         }
         var recognition = new SpeechRecognition();
-        recognition.continuous = false; recognition.interimResults = false; recognition.lang = "mr-IN"; 
+        recognition.continuous = false; 
+        recognition.interimResults = false; 
+        // 👇 येथे बदल केला आहे: आता भाषा Indian English आहे
+        recognition.lang = "en-IN"; 
         
         var btn = document.querySelector(`button[onclick="startDictation('${targetId}')"]`);
         if(btn) { btn.style.backgroundColor = "#e74c3c"; btn.style.color = "white"; }
@@ -40,7 +43,7 @@ function startDictation(targetId) {
 }
 
 // ==========================================
-// १. अचूक तारीख आणि डेटाबेस (Storage Crash Fix)
+// १. अचूक तारीख आणि डेटाबेस 
 // ==========================================
 function getTodayDateStr() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
 
@@ -63,7 +66,7 @@ function checkActivation() { var authHash = localStorage.getItem('appAuthHash');
 function activateApp() { var key = document.getElementById('activationKey').value.trim(); if(key === MASTER_ACTIVATION_KEY) { localStorage.setItem('appAuthHash', btoa('activated_true')); alert("✅ ॲप ॲक्टिव्हेट झाले!"); document.getElementById('activationScreen').style.display = "none"; document.getElementById('lockScreen').style.display = "flex"; } else { alert("❌ चुकीची ॲक्टिव्हेशन की!"); } }
 
 // ==========================================
-// ३. ड्युअल लॉगिन (Session Fix)
+// ३. ड्युअल लॉगिन 
 // ==========================================
 var currentUserRole = 'owner'; 
 function checkPin() {
@@ -79,7 +82,7 @@ function setupRoleUI() {
     else { if(navHome) navHome.style.display = 'block'; if(navInv) navInv.style.display = 'block'; if(navSet) navSet.style.display = 'block'; if(staffBox) staffBox.style.display = 'block'; if(suppBox) suppBox.style.display = 'block'; showTab('homeTab', navHome); }
 }
 
-// दुकानाची माहिती सेव्ह करणे (GSTIN & Logo Size Fix)
+// दुकानाची माहिती सेव्ह करणे
 var logoInput = document.getElementById('shopLogoInput');
 if(logoInput) { logoInput.addEventListener('change', function(event) { var file = event.target.files[0]; if (file) { if (file.size > 200000) { alert("⚠️ लोगो 200KB पेक्षा कमी निवडा."); document.getElementById('shopLogoInput').value = ""; return; } var reader = new FileReader(); reader.onload = function(e) { var logoData = e.target.result; document.getElementById('logoPreview').src = logoData; document.getElementById('logoPreview').style.display = 'block'; document.getElementById('shopLogoInput').dataset.base64 = logoData; }; reader.readAsDataURL(file); } }); }
 function saveShopSettings() { localStorage.setItem('shopName', cleanText(document.getElementById('shopNameInput').value)); localStorage.setItem('shopAddress', cleanText(document.getElementById('shopAddressInput').value)); localStorage.setItem('shopPhone', cleanText(document.getElementById('shopPhoneInput').value)); localStorage.setItem('shopGstin', cleanText(document.getElementById('shopGstinInput').value).toUpperCase()); var logoData = document.getElementById('shopLogoInput').dataset.base64; if(logoData) localStorage.setItem('shopLogo', logoData); var oPin = document.getElementById('shopPinInput').value.trim(); if(oPin) localStorage.setItem('shopPinHash', btoa(oPin)); var sPin = document.getElementById('staffPinInput').value.trim(); if(sPin) localStorage.setItem('staffPinHash', btoa(sPin)); showMessage("⚙️ सेटिंग सेव्ह झाले!", "green"); loadShopSettings(); }
@@ -92,7 +95,7 @@ function loadShopSettings() {
 }
 
 // ==========================================
-// ४. औषधे व्यवस्थापन (Supplier Ledger & NaN Fix)
+// ४. औषधे व्यवस्थापन 
 // ==========================================
 function loadSupplierDropdown() { var select = document.getElementById('supplierSelect'); if(!select) return; select.innerHTML = "<option value=''>-- सप्लायर निवडा (Optional) --</option>"; getDB('Suppliers').forEach(s => { select.innerHTML += `<option value='${s.supplier_id}'>${s.name}</option>`; }); }
 
@@ -120,7 +123,7 @@ function deleteMedicine(id) { if (confirm("हे औषध डिलीट क�
 function searchMedicine() { var input = document.getElementById("searchInput"); if(!input) return; var filter = cleanText(input.value.toUpperCase()); var tr = document.getElementById("medicineList").getElementsByTagName("tr"); for (var i = 0; i < tr.length; i++) { var tdName = tr[i].getElementsByTagName("td")[0]; if (tdName && tdName.innerText !== "अजून औषधे जोडलेली नाहीत.") { tr[i].style.display = tdName.innerText.toUpperCase().indexOf(filter) > -1 ? "" : "none"; } } }
 
 // ==========================================
-// ५. बिलिंग आणि कार्ट (Discount Logic & Thermal Print)
+// ५. बिलिंग आणि कार्ट 
 // ==========================================
 var cart = []; var cartTotal = 0; var finalCartTotal = 0;
 
@@ -223,7 +226,6 @@ function loadInventoryStats() {
 }
 function printDashboard() { var printContents = document.getElementById('dashboardOverview').innerHTML; var originalContents = document.body.innerHTML; document.body.innerHTML = "<h2 style='text-align:center;'>🩺 मेडिकल शॉप: फायनान्शियल रिपोर्ट</h2>" + printContents; window.print(); document.body.innerHTML = originalContents; location.reload(); }
 function shareDashboardWhatsApp() { var text = `*📊 मेडिकल शॉप फायनान्शियल रिपोर्ट*\nतारीख: ${new Date().toLocaleDateString('en-IN')}\n\n*🔹 आजचा हिशोब:*\nविक्री: ${document.getElementById('dashTodaySales').innerText} | खर्च: ${document.getElementById('dashTodayExpense').innerText}\n*आजचा खरा नफा: ${document.getElementById('dashNetProfit').innerText}*\n\n_Generated securely by App_`; window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank'); }
-
 function displayTodayBills() {
     var listBody = document.getElementById('todayBillsList'); if(!listBody) return; listBody.innerHTML = ""; var todayStr = getTodayDateStr(); var todaySales = getDB('Sales').filter(s => s.bill_date === todayStr).reverse();
     if (todaySales.length === 0) { listBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>आज अजून कोणतेही बिल बनवले नाही.</td></tr>"; return; }
@@ -235,7 +237,7 @@ function displayExpenses() { var listBody = document.getElementById('expenseList
 function deleteExpense(id) { if (confirm("खर्च डिलीट करायचा?")) { var expenses = getDB('Expenses').filter(e => e.expense_id != id); if(setDB('Expenses', expenses)) refreshAllData(); } }
 
 // ==========================================
-// ७. खातेवही (Advance Logic)
+// ७. खातेवही 
 // ==========================================
 function saveCustomer() { var name = cleanText(document.getElementById('custName').value); var phone = cleanText(document.getElementById('custPhone').value); var balance = parseFloat(document.getElementById('custBalance').value) || 0; if (!name) return; var custs = getDB('Customers'); custs.push({customer_id: new Date().getTime().toString(), name, phone, ledger_balance: balance}); if(setDB('Customers', custs)) { showMessage("📓 ग्राहक सेव्ह झाला!", "green"); document.getElementById('customerForm').reset(); displayCustomers(); } }
 function displayCustomers() { var listBody = document.getElementById('customerList'); if(!listBody) return; listBody.innerHTML = ""; var custs = getDB('Customers').sort((a,b) => b.ledger_balance - a.ledger_balance); if (custs.length === 0) return; custs.forEach(c => { var balText = c.ledger_balance < 0 ? `Advance (जमा)<br>₹${Math.abs(c.ledger_balance).toFixed(2)}` : `₹${(c.ledger_balance || 0).toFixed(2)}`; var balColor = c.ledger_balance <= 0 ? "green" : "red"; listBody.innerHTML += `<tr><td><b>${c.name}</b></td><td style='color: ${balColor};'>${balText}</td><td><button onclick="payDues('${c.customer_id}', '${c.name}', ${c.ledger_balance})" class="btn-save" style="padding: 5px;">जमा करा</button></td></tr>`; }); }
