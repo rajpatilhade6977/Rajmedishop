@@ -260,19 +260,44 @@ function startScanner() { if(typeof Html5QrcodeScanner === 'undefined') { alert(
 function loadPurchaseDropdown() { var select = document.getElementById('purchaseMedicineSelect'); if(!select) return; select.innerHTML = "<option value=''>-- यादीतून औषध निवडा --</option>"; getDB('Medicines').forEach(med => { select.innerHTML += `<option value='${med.medicine_id}' data-barcode='${med.batch_no}'>${med.name} (साठा: ${med.stock_qty})</option>`; }); }
 function startPurchaseScanner() { if(typeof Html5QrcodeScanner === 'undefined') { alert("❌ स्कॅनर सुरु करण्यासाठी scanner.js फाईल जोडलेली नाही!"); return; } document.getElementById("qr-reader-purchase").style.display = "block"; purchaseScanner = new Html5QrcodeScanner("qr-reader-purchase", { fps: 10, qrbox: 250 }); purchaseScanner.render(function(decodedText) { purchaseScanner.clear(); document.getElementById("qr-reader-purchase").style.display = "none"; var select = document.getElementById('purchaseMedicineSelect'); var found = false; for (var i = 0; i < select.options.length; i++) { if (select.options[i].getAttribute('data-barcode') === decodedText) { select.selectedIndex = i; document.getElementById('purchasePackQty').focus(); found = true; break; } } if(!found) alert("⚠️ औषध सापडले नाही!"); }, function(){}); }
 
+// // ==========================================
+// ९. 👨‍💼 CA ऑडिट रिपोर्ट (Tab-Separated for Excel Paste)
 // ==========================================
-// ९. 👨‍💼 CA ऑडिट रिपोर्ट 
-// ==========================================
-function safeCopyText(text, successMessage) { var textArea = document.createElement("textarea"); textArea.value = text; textArea.style.position = "fixed"; textArea.style.left = "-9999px"; document.body.appendChild(textArea); textArea.focus(); textArea.select(); try { document.execCommand('copy'); alert("✅ " + successMessage + " कॉपी झाला आहे!\n\nआता थेट WhatsApp, Email किंवा Notepad उघडा आणि तिथे 'Paste' (पेस्ट) करा."); } catch (err) { alert("❌ एरर: कॉपी करता आले नाही."); } document.body.removeChild(textArea); }
+function safeCopyText(text, successMessage) { var textArea = document.createElement("textarea"); textArea.value = text; textArea.style.position = "fixed"; textArea.style.left = "-9999px"; document.body.appendChild(textArea); textArea.focus(); textArea.select(); try { document.execCommand('copy'); alert("✅ " + successMessage + " कॉपी झाला आहे!\n\nआता मोबाईलमध्ये Excel किंवा Google Sheets ॲप उघडा आणि पहिल्या डब्यात (Cell A1 मध्ये) 'Paste' करा. सर्व डेटा बरोबर रकान्यात बसेल!"); } catch (err) { alert("❌ एरर: कॉपी करता आले नाही."); } document.body.removeChild(textArea); }
+
 function exportCAExcel() {
     var sales = getDB('Sales'); var expenses = getDB('Expenses'); var meds = getDB('Medicines');
-    var csvContent = "--- SALES REPORT (विक्री अहवाल) ---\nतारीख (Date),बिल क्र. (Bill ID),ग्राहक (Customer),ग्राहक GSTIN,डॉक्टर (Doctor),रोख/उधारी (Type),एकूण रक्कम (Amount),खरा नफा (Profit)\n";
-    sales.forEach(function(s) { var dr = s.doctor_name ? `"${s.doctor_name.replace(/"/g, '""')}"` : "-"; var cust = `"${s.customer_name.replace(/"/g, '""')}"`; var type = s.is_credit ? "उधारी" : "रोख"; var cGstin = s.customer_gstin ? s.customer_gstin : "-"; csvContent += `${s.bill_date},${s.bill_id},${cust},${cGstin},${dr},${type},${(s.total_amount || 0).toFixed(2)},${(s.bill_profit || 0).toFixed(2)}\n`; });
-    csvContent += "\n--- EXPENSE REPORT (खर्च अहवाल) ---\nतारीख (Date),खर्चाचे कारण (Description),रक्कम (Amount)\n";
-    expenses.forEach(function(e) { csvContent += `${e.expense_date},"${e.description.replace(/"/g, '""')}",${(e.amount || 0).toFixed(2)}\n`; });
-    var totalStockValue = 0; csvContent += "\n--- CLOSING INVENTORY (शिल्लक साठा) ---\nऔषध (Medicine Name),HSN (HSN Code),बॅच (Batch),एक्सपायरी (Expiry),शिल्लक नग (Qty),खरेदी दर (PTR),एकूण किंमत (Stock Value)\n";
-    meds.forEach(function(m) { var val = m.stock_qty > 0 ? (m.stock_qty * m.purchasePrice) : 0; totalStockValue += val; var hsn = m.hsn_code || "-"; csvContent += `"${m.name.replace(/"/g, '""')}",${hsn},${m.batch_no},${m.expiry_date},${m.stock_qty},${(m.purchasePrice || 0).toFixed(2)},${val.toFixed(2)}\n`; });
-    csvContent += `,,,,,,एकूण साठा मूल्य (Total Value):,${totalStockValue.toFixed(2)}\n`; safeCopyText(csvContent, "CA ऑडिट रिपोर्ट (Excel/CSV Data)");
+    
+    // '\t' म्हणजे Excel चा नवीन कॉलम (Column Break)
+    var tsvContent = "--- SALES REPORT (विक्री अहवाल) ---\nतारीख (Date)\tबिल क्र. (Bill ID)\tग्राहक (Customer)\tग्राहक GSTIN\tडॉक्टर (Doctor)\tरोख/उधारी (Type)\tएकूण रक्कम (Amount)\tखरा नफा (Profit)\n";
+    
+    sales.forEach(function(s) { 
+        var dr = s.doctor_name ? s.doctor_name : "-"; 
+        var cust = s.customer_name; 
+        var type = s.is_credit ? "उधारी" : "रोख"; 
+        var cGstin = s.customer_gstin ? s.customer_gstin : "-"; 
+        tsvContent += `${s.bill_date}\t${s.bill_id}\t${cust}\t${cGstin}\t${dr}\t${type}\t${(s.total_amount || 0).toFixed(2)}\t${(s.bill_profit || 0).toFixed(2)}\n`; 
+    });
+    
+    tsvContent += "\n--- EXPENSE REPORT (खर्च अहवाल) ---\nतारीख (Date)\tखर्चाचे कारण (Description)\tरक्कम (Amount)\n";
+    
+    expenses.forEach(function(e) { 
+        tsvContent += `${e.expense_date}\t${e.description}\t${(e.amount || 0).toFixed(2)}\n`; 
+    });
+    
+    var totalStockValue = 0; 
+    tsvContent += "\n--- CLOSING INVENTORY (शिल्लक साठा) ---\nऔषध (Medicine Name)\tHSN (HSN Code)\tबॅच (Batch)\tएक्सपायरी (Expiry)\tशिल्लक नग (Qty)\tखरेदी दर (PTR)\tएकूण किंमत (Stock Value)\n";
+    
+    meds.forEach(function(m) { 
+        var val = m.stock_qty > 0 ? (m.stock_qty * m.purchasePrice) : 0; 
+        totalStockValue += val; 
+        var hsn = m.hsn_code || "-"; 
+        tsvContent += `${m.name}\t${hsn}\t${m.batch_no}\t${m.expiry_date}\t${m.stock_qty}\t${(m.purchasePrice || 0).toFixed(2)}\t${val.toFixed(2)}\n`; 
+    });
+    
+    tsvContent += `\t\t\t\t\tएकूण साठा मूल्य (Total Value):\t${totalStockValue.toFixed(2)}\n`; 
+    
+    safeCopyText(tsvContent, "CA ऑडिट रिपोर्ट (Excel Format)");
 }
 
 function exportData() { var backupData = { medicines: getDB('Medicines'), sales: getDB('Sales'), customers: getDB('Customers'), suppliers: getDB('Suppliers'), expenses: getDB('Expenses'), staff: getDB('Staff') }; var dataStr = JSON.stringify(backupData); safeCopyText(dataStr, "संपूर्ण डेटाबेस (Backup JSON)"); }
