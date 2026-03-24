@@ -1,0 +1,148 @@
+/* ==========================================
+   मेडिकल शॉप ॲप - संपूर्ण स्टाईल (CSS)
+========================================== */
+
+/* 🌟 बेसिक पेज डिझाईन */
+body { 
+    font-family: Arial, sans-serif; 
+    padding: 15px; 
+    margin: 0; 
+    background-color: #f4f7f6; 
+    color: #333; 
+    padding-bottom: 95px; /* <--- इथे जागा वाढवली */ 
+}
+h1 { text-align: center; color: #2c3e50; margin-top: 0; font-size: 24px; }
+h2 { font-size: 18px; color: #2c3e50; border-bottom: 2px solid #3498db;  5px; margin-top: 0; }
+h3 { font-size: 16px; color: #34495e; margin-bottom: 10px; }
+
+/* 📝 इनपुट्स आणि ड्रॉपडाऊन */
+input, select { 
+    width: 100%; 
+    padding: 10px; 
+    margin: 8px 0; 
+    box-sizing: border-box; 
+    border: 1px solid #ccc; 
+    border-radius: 4px; 
+    font-size: 16px; 
+}
+
+/* 🔘 बटणांचे आकर्षक रंग */
+button { 
+    color: white; 
+    padding: 12px 15px; 
+    border: none; 
+    border-radius: 4px; 
+    width: 100%; 
+    cursor: pointer; 
+    font-size: 16px; 
+    font-weight: bold; 
+    margin-top: 10px; 
+}
+.btn-save { background-color: #4CAF50; } 
+.btn-refresh { background-color: #008CBA; }
+.btn-cart { background-color: #2196F3; } 
+.btn-bill { background-color: #e91e63; font-size: 18px; }
+.btn-settings { background-color: #673ab7; } 
+.btn-ledger { background-color: #d81b60; }
+
+/* छोट्या ॲक्शन बटणांसाठी (उदा. Edit, Delete) */
+.action-btn { 
+    width: auto; 
+    padding: 6px 12px; 
+    font-size: 14px; 
+    margin: 2px; 
+    cursor: pointer; 
+    border: none; 
+    border-radius: 3px; 
+    color: white; 
+}
+.edit-btn { background-color: #ff9800; } 
+.delete-btn { background-color: #f44336; }
+
+/* 📊 टेबल डिझाईन */
+table { 
+    width: 100%; 
+    margin-top: 10px; 
+    text-align: left; 
+    border-collapse: collapse; 
+    background-color: white; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+}
+th, td { padding: 10px; border: 1px solid #ddd; font-size: 14px; }
+th { background-color: #f2f2f2; color: #333; }
+
+/* 📦 बॉक्सेसची डिझाईन (Section Box) */
+.section-box { 
+    background-color: white; 
+    padding: 15px; 
+    border-radius: 8px; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+    margin-bottom: 20px; 
+}
+
+/* मेसेज दाखवण्यासाठी (Alerts) */
+#message { 
+    font-weight: bold; 
+    margin-top: 10px; 
+    font-size: 14px; 
+    text-align: center; 
+    margin-bottom: 10px; 
+}
+
+/* ==========================================
+   📱 टॅब आणि बॉटम नेव्हिगेशन (Bottom Bar UI)
+========================================== */
+.tab-content { display: none; animation: fadeIn 0.3s; }
+.tab-content.active-tab { display: block; }
+
+@keyframes fadeIn { 
+    from { opacity: 0; } 
+    to { opacity: 1; } 
+}
+
+.bottom-nav { 
+    position: fixed; 
+    bottom: 0; 
+    left: 0; 
+    width: 100%; 
+    background-color: #ffffff; 
+    display: flex; 
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.15); 
+    z-index: 1000; 
+    border-top: 1px solid #ddd; 
+    padding-bottom: 25px; /* <--- मोबाईलच्या नेव्हिगेशन बटणांसाठी जागा वाढवली */
+}
+.bottom-nav button { 
+    flex: 1; 
+    background: none; 
+    border: none; 
+    padding: 10px 0; 
+    font-size: 12px; 
+    color: #777; 
+    cursor: pointer; 
+    margin: 0; 
+    border-radius: 0; 
+    font-weight: bold; 
+}
+.bottom-nav button .icon { display: block; font-size: 20px; margin-bottom: 3px; }
+.bottom-nav button.active-nav { color: #2196F3; border-top: 3px solid #2196F3; background-color: #f1f8ff; }
+
+/* ==========================================
+   🧾 फायनल पावती आणि प्रिंटिंग (Invoice Styling)
+========================================== */
+#invoiceSection { 
+    display: none; 
+    border: 2px dashed #555; 
+    padding: 20px; 
+    margin-top: 30px; 
+    background-color: white; 
+    color: black; 
+}
+
+/* प्रिंट करताना फक्त पावती दिसावी, बाकी ॲप लपावे यासाठी */
+@media print {
+    body * { visibility: hidden; } 
+    #invoiceSection, #invoiceSection * { visibility: visible; }
+    #invoiceSection { position: absolute; left: 0; top: 0; width: 100%; border: none; } 
+    button, .bottom-nav { display: none !important; }
+}
