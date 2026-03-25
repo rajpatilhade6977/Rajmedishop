@@ -30,7 +30,6 @@ function getDB(table) { try { var data = JSON.parse(localStorage.getItem(table))
 function setDB(table, data) { try { localStorage.setItem(table, JSON.stringify(data)); checkStorageLimit(); return true; } catch(e) { alert("❌ अत्यंत महत्त्वाचे: ॲपची मेमरी फुल झाली आहे! कृपया जुना डेटा डिलीट करा किंवा बॅकअप घ्या."); return false; } }
 
 function checkStorageLimit() { var total = 0; for(var x in localStorage) { if(localStorage.hasOwnProperty(x)) { total += ((localStorage[x].length + x.length) * 2); } } var mb = (total/1024/1024).toFixed(2); if(mb > 4.0) { alert(`⚠️ धोक्याचा इशारा: ॲपची मेमरी ${mb}MB भरली आहे. कृपया बॅकअप डाउनलोड करा!`); } }
-
 function refreshAllData() { calculateFinancialDashboard(); loadInventoryStats(); displayTodayBills(); displayExpenses(); displayMedicines(); displayCustomers(); displaySuppliers(); displayStaff(); displayBankTransactions(); }
 
 function checkActivation() { var authHash = localStorage.getItem('appAuthHash'); if(authHash !== btoa('activated_true')) { document.getElementById('activationScreen').style.display = "flex"; document.getElementById('lockScreen').style.display = "none"; return false; } else { document.getElementById('activationScreen').style.display = "none"; return true; } }
@@ -62,43 +61,27 @@ function loadShopSettings() {
 }
 
 // ==========================================
-// ४. 🏦 बँक व्यवहार (Add Edit/Delete)
+// ४. 🏦 बँक व्यवहार
 // ==========================================
 function addBankEntry(desc, type, amount, dateStr) { var bankDB = getDB('BankTransactions'); bankDB.push({ id: new Date().getTime().toString(), date: dateStr || getTodayDateStr(), description: desc, type: type, amount: parseFloat(amount) }); setDB('BankTransactions', bankDB); }
 function saveBankTransaction() { 
-    if(isProcessing) return; 
-    var editId = document.getElementById('editBankId').value;
-    var desc = cleanText(document.getElementById('bankDesc').value); var type = document.getElementById('bankType').value; var amt = parseFloat(document.getElementById('bankAmount').value); 
-    if(!desc || isNaN(amt) || amt <= 0) return; 
-    isProcessing = true; 
-    
+    if(isProcessing) return; var editId = document.getElementById('editBankId').value; var desc = cleanText(document.getElementById('bankDesc').value); var type = document.getElementById('bankType').value; var amt = parseFloat(document.getElementById('bankAmount').value); 
+    if(!desc || isNaN(amt) || amt <= 0) return; isProcessing = true; 
     var bankDB = getDB('BankTransactions');
-    if(editId) {
-        var idx = bankDB.findIndex(b => b.id == editId);
-        if(idx > -1) { bankDB[idx].description = desc; bankDB[idx].type = type; bankDB[idx].amount = amt; setDB('BankTransactions', bankDB); }
-        document.getElementById('editBankId').value = "";
-    } else { addBankEntry(desc, type, amt); }
-    
+    if(editId) { var idx = bankDB.findIndex(b => b.id == editId); if(idx > -1) { bankDB[idx].description = desc; bankDB[idx].type = type; bankDB[idx].amount = amt; setDB('BankTransactions', bankDB); } document.getElementById('editBankId').value = ""; } else { addBankEntry(desc, type, amt); }
     document.getElementById('bankForm').reset(); showMessage("🏦 बँक एन्ट्री सेव्ह झाली!", "green"); refreshAllData(); setTimeout(() => { isProcessing = false; }, 1000); 
 }
-function editBankEntry(id) { 
-    var b = getDB('BankTransactions').find(x => x.id == id); 
-    if(b) { 
-        document.getElementById('editBankId').value = b.id; document.getElementById('bankDesc').value = b.description; 
-        document.getElementById('bankType').value = b.type; document.getElementById('bankAmount').value = b.amount; 
-        window.scrollTo(0, document.getElementById('bankForm').offsetTop - 50); showMessage("✏️ बँक एन्ट्री एडिट मोडमध्ये आहे.", "orange"); 
-    } 
-}
+function editBankEntry(id) { var b = getDB('BankTransactions').find(x => x.id == id); if(b) { document.getElementById('editBankId').value = b.id; document.getElementById('bankDesc').value = b.description; document.getElementById('bankType').value = b.type; document.getElementById('bankAmount').value = b.amount; window.scrollTo(0, document.getElementById('bankForm').offsetTop - 50); showMessage("✏️ बँक एन्ट्री एडिट मोडमध्ये आहे.", "orange"); } }
 function deleteBankEntry(id) { if(!confirm("⚠️ ही बँक एन्ट्री कायमची डिलीट करायची आहे का?")) return; var bankDB = getDB('BankTransactions').filter(b => b.id != id); if(setDB('BankTransactions', bankDB)) { showMessage("🗑️ बँक एन्ट्री डिलीट झाली!", "red"); refreshAllData(); } }
 function displayBankTransactions() {
     var listBody = document.getElementById('bankList'); if(!listBody) return; listBody.innerHTML = ""; var txns = getDB('BankTransactions').reverse(); var balance = 0;
     getDB('BankTransactions').forEach(t => { if(t.type === 'IN') balance += t.amount; else balance -= t.amount; }); document.getElementById('bankBalanceDisplay').innerText = "₹" + balance.toFixed(2); document.getElementById('bankBalanceDisplay').style.color = balance < 0 ? "red" : "#1565c0";
     if (txns.length === 0) { listBody.innerHTML = "<tr><td colspan='4' style='text-align:center;'>बँकेचे व्यवहार नाहीत.</td></tr>"; return; }
-    txns.forEach(t => { var inAmt = t.type === 'IN' ? `₹${t.amount.toFixed(2)}` : "-"; var outAmt = t.type === 'OUT' ? `₹${t.amount.toFixed(2)}` : "-"; listBody.innerHTML += `<tr><td><b>${t.description}</b><br><small>${t.date}</small></td><td style='color: green; font-weight:bold;'>${inAmt}</td><td style='color: red; font-weight:bold;'>${outAmt}</td><td><button class="edit-btn" onclick="editBankEntry('${t.id}')">✏️</button> <button onclick="deleteBankEntry('${t.id}')" class="action-btn delete-btn" style="padding:5px;">Del</button></td></tr>`; });
+    txns.forEach(t => { var inAmt = t.type === 'IN' ? `₹${t.amount.toFixed(2)}` : "-"; var outAmt = t.type === 'OUT' ? `₹${t.amount.toFixed(2)}` : "-"; listBody.innerHTML += `<tr><td><b>${t.description}</b><br><small>${t.date}</small></td><td style='color: green; font-weight:bold;'>${inAmt}</td><td style='color: red; font-weight:bold;'>${outAmt}</td><td><span onclick="editBankEntry('${t.id}')" style="cursor:pointer; font-size:16px;">✏️</span> <span onclick="deleteBankEntry('${t.id}')" style="cursor:pointer; font-size:16px; color:red; margin-left:10px;">❌</span></td></tr>`; });
 }
 
 // ==========================================
-// ५. औषधे व्यवस्थापन & बिलिंग
+// ५. औषधे व्यवस्थापन 
 // ==========================================
 function loadSupplierDropdown() { var select = document.getElementById('supplierSelect'); if(!select) return; select.innerHTML = "<option value=''>-- सप्लायर निवडा (Optional) --</option>"; getDB('Suppliers').forEach(s => { select.innerHTML += `<option value='${s.supplier_id}'>${s.name}</option>`; }); }
 function saveMedicine() {
@@ -108,19 +91,13 @@ function saveMedicine() {
         if (!name || !pBillDate) { alert("⚠️ कृपया औषधाचे नाव आणि सप्लायर बिल तारीख टाका!"); return; } if (purchasedPacks <= 0 || packPTR <= 0 || packMRP <= 0) { alert("⚠️ कृपया QTY आणि RATE योग्य टाका!"); return; } if (!expiry) { alert("⚠️ कृपया EXP DATE टाका!"); return; }
         
         isProcessing = true;
-        var totalCost = purchasedPacks * packPTR; var calculatedStock = unitsPerPack * (purchasedPacks + freePacks); 
-        var perUnitPTR = calculatedStock > 0 ? (totalCost / calculatedStock) : 0; var perUnitMRP = unitsPerPack > 0 ? (packMRP / unitsPerPack) : 0; 
+        var totalCost = purchasedPacks * packPTR; var calculatedStock = unitsPerPack * (purchasedPacks + freePacks); var perUnitPTR = calculatedStock > 0 ? (totalCost / calculatedStock) : 0; var perUnitMRP = unitsPerPack > 0 ? (packMRP / unitsPerPack) : 0; 
         var meds = getDB('Medicines'); var medObj = { medicine_id: editId || new Date().getTime().toString(), name: name, unitType: unitType, hsn_code: hsnCode, salt_name: saltName, rx_required: isRx, company: company, rack_no: rackNo, batch_no: batch, expiry_date: expiry, purchasePrice: perUnitPTR, mrp: perUnitMRP, stock_qty: calculatedStock, unitsPerPack: unitsPerPack };
         if (editId) { var index = meds.findIndex(m => m.medicine_id == editId); if(index > -1) meds[index] = medObj; } else { meds.push(medObj); }
         
         if (!editId && suppId && totalCost > 0) { 
             var supps = getDB('Suppliers'); var sIdx = supps.findIndex(s => s.supplier_id == suppId); 
-            if(sIdx > -1) { 
-                var dueDate = addDays(pBillDate, cDays);
-                if (!supps[sIdx].bill_history) supps[sIdx].bill_history = [];
-                supps[sIdx].bill_history.push({ bill_date: pBillDate, amount: totalCost, due_date: dueDate, is_paid: false });
-                supps[sIdx].pending_dues += totalCost; setDB('Suppliers', supps); 
-            } 
+            if(sIdx > -1) { var dueDate = addDays(pBillDate, cDays); if (!supps[sIdx].bill_history) supps[sIdx].bill_history = []; supps[sIdx].bill_history.push({ bill_date: pBillDate, amount: totalCost, due_date: dueDate, is_paid: false }); supps[sIdx].pending_dues += totalCost; setDB('Suppliers', supps); } 
         }
         if(setDB('Medicines', meds)) { showMessage(editId ? "🔄 औषध अपडेट झाले!" : "✅ औषध सेव्ह झाले!", "green"); document.getElementById('medicineForm').reset(); document.getElementById('unitsPerPack').value = "10"; document.getElementById('editId').value = ""; refreshAllData(); }
         setTimeout(() => { isProcessing = false; }, 1000);
@@ -135,7 +112,7 @@ function displayMedicines() {
     var listBody = document.getElementById('medicineList'); if(!listBody) return; listBody.innerHTML = ""; var meds = getDB('Medicines'); if (meds.length === 0) { listBody.innerHTML = "<tr><td colspan='4' style='text-align:center;'>अजून औषधे जोडलेली नाहीत.</td></tr>"; return; } 
     meds.forEach(med => { 
         var stockColor = med.stock_qty <= 0 ? "red" : "black"; var rxTag = med.rx_required ? "<span style='color:red; font-weight:bold;'>(Rx)</span> " : ""; var hsnText = med.hsn_code && med.hsn_code !== "-" ? ` | HSN: ${med.hsn_code}` : ""; var saltText = med.salt_name && med.salt_name !== "-" ? `<br><small style="color: #2980b9;">${med.salt_name}${hsnText}</small>` : `<br><small style="color: #2980b9;">${hsnText}</small>`; var pPrice = med.purchasePrice ? med.purchasePrice : 0; var rackText = med.rack_no && med.rack_no !== "-" ? `<br><small style="color:#d35400; font-weight:bold;">रॅक: ${med.rack_no}</small>` : "";
-        listBody.innerHTML += `<tr><td><b>${rxTag}${med.name}</b>${saltText}${rackText}<br><small>बॅच: ${med.batch_no}</small></td><td style='color: ${stockColor}; font-weight: bold;'>${med.stock_qty}<br><small style="color:gray;">${med.unitType || "नग"}</small></td><td><small>खरेदी: ₹${pPrice.toFixed(2)}</small><br><b>MRP: ₹${(med.mrp || 0).toFixed(2)}</b></td><td><button class="edit-btn" onclick="editMedicine('${med.medicine_id}')">✏️</button><button class="action-btn delete-btn" onclick="deleteMedicine('${med.medicine_id}')">Del</button></td></tr>`; 
+        listBody.innerHTML += `<tr><td><b>${rxTag}${med.name}</b>${saltText}${rackText}<br><small>बॅच: ${med.batch_no}</small></td><td style='color: ${stockColor}; font-weight: bold;'>${med.stock_qty}<br><small style="color:gray;">${med.unitType || "नग"}</small></td><td><small>खरेदी: ₹${pPrice.toFixed(2)}</small><br><b>MRP: ₹${(med.mrp || 0).toFixed(2)}</b></td><td><span onclick="editMedicine('${med.medicine_id}')" style="cursor:pointer; font-size:16px;">✏️</span> <span onclick="deleteMedicine('${med.medicine_id}')" style="cursor:pointer; font-size:16px; color:red; margin-left:10px;">❌</span></td></tr>`; 
     }); 
 }
 function deleteMedicine(id) { if (confirm("हे औषध डिलीट करायचे आहे का?")) { var meds = getDB('Medicines').filter(m => m.medicine_id != id); if(setDB('Medicines', meds)) { showMessage("🗑️ औषध डिलीट झाले!", "red"); refreshAllData(); } } }
@@ -167,7 +144,8 @@ function addToCart() {
     var totalPurchaseCost = realQtyToDeduct * pPrice; var totalPrice = realQtyToDeduct * baseMRP; var medNameDisplay = option.text.split(' - ₹')[0].replace('(Rx) ', ''); 
     if (existingItem) { existingItem.inputQty += inputQty; existingItem.qty += realQtyToDeduct; existingItem.total += totalPrice; existingItem.totalPurchase += totalPurchaseCost; existingItem.dosage = dosageStr; existingItem.displayQty = existingItem.inputQty + (sellType === 'pack' ? ' PAC' : ' TAB'); } else { cart.push({ id: medId, name: medNameDisplay, batch: batch, expiry: expDateStr, sellType: sellType, inputQty: inputQty, qty: realQtyToDeduct, price: (sellType==='pack' ? baseMRP*packSize : baseMRP), total: totalPrice, totalPurchase: totalPurchaseCost, dosage: dosageStr, displayQty: inputQty + (sellType === 'pack' ? ' PAC' : ' TAB') }); } updateCartUI();
 }
-function updateCartUI() { var cartBody = document.getElementById('cartBody'); if(!cartBody) return; cartBody.innerHTML = ""; cartTotal = 0; cart.forEach(item => { cartTotal += item.total; var doseDisplay = item.dosage ? `<br><small style="color:#8e24aa; font-weight:bold;">${item.dosage}</small>` : ""; cartBody.innerHTML += `<tr><td><b>${item.name}</b>${doseDisplay}</td><td><b>${item.displayQty}</b></td><td>₹${item.price.toFixed(2)}</td><td>₹${item.total.toFixed(2)}</td></tr>`; }); document.getElementById('cartTotalDisplay').innerText = "मूळ रक्कम: ₹" + cartTotal.toFixed(2); applyDiscount(); }
+function updateCartUI() { var cartBody = document.getElementById('cartBody'); if(!cartBody) return; cartBody.innerHTML = ""; cartTotal = 0; cart.forEach(item => { cartTotal += item.total; var doseDisplay = item.dosage ? `<br><small style="color:#8e24aa; font-weight:bold;">${item.dosage}</small>` : ""; cartBody.innerHTML += `<tr><td><b>${item.name}</b>${doseDisplay}</td><td><b>${item.displayQty}</b></td><td>₹${item.price.toFixed(2)}</td><td><span onclick="removeCartItem('${item.id}')" style="cursor:pointer; color:red;">❌</span> ₹${item.total.toFixed(2)}</td></tr>`; }); document.getElementById('cartTotalDisplay').innerText = "मूळ रक्कम: ₹" + cartTotal.toFixed(2); applyDiscount(); }
+function removeCartItem(id) { cart = cart.filter(item => item.id !== id); updateCartUI(); }
 function formatExpDate(exp) { if(!exp || exp === "-") return "-"; var parts = exp.split('-'); if(parts.length === 3) return parts[1] + "/" + parts[0].slice(-2); return exp; }
 
 function generateBill(isCredit = false) {
@@ -240,52 +218,22 @@ function deleteBill(billId) {
 }
 
 function toggleExpUtrField() { var mode = document.getElementById('expPaymentMode').value; var utrBox = document.getElementById('expUtrNo'); if(mode === "UPI") { utrBox.style.display = "block"; utrBox.focus(); } else { utrBox.style.display = "none"; utrBox.value = ""; } }
-
-// ✏️ Edit Expense Logic
-function editExpense(id) { 
-    var e = getDB('Expenses').find(x => x.expense_id == id); 
-    if(e) { 
-        document.getElementById('editExpId').value = e.expense_id; 
-        document.getElementById('expDesc').value = e.description.split(' (UPI')[0]; // Clean UPI text for editing
-        document.getElementById('expAmount').value = e.amount; 
-        document.getElementById('expPaymentMode').value = e.mode || "Cash"; 
-        toggleExpUtrField(); 
-        window.scrollTo(0, document.getElementById('expenseForm').offsetTop - 50); showMessage("✏️ खर्च एडिट मोडमध्ये आहे.", "orange"); 
-    } 
-}
-
+function editExpense(id) { var e = getDB('Expenses').find(x => x.expense_id == id); if(e) { document.getElementById('editExpId').value = e.expense_id; document.getElementById('expDesc').value = e.description.split(' (UPI')[0]; document.getElementById('expAmount').value = e.amount; document.getElementById('expPaymentMode').value = e.mode || "Cash"; toggleExpUtrField(); window.scrollTo(0, document.getElementById('expenseForm').offsetTop - 50); showMessage("✏️ खर्च एडिट मोडमध्ये आहे.", "orange"); } }
 function saveExpense() { 
-    if(isProcessing) return;
-    var editId = document.getElementById('editExpId').value;
-    var desc = cleanText(document.getElementById('expDesc').value); var amount = parseFloat(document.getElementById('expAmount').value) || 0; var mode = document.getElementById('expPaymentMode').value; var utr = cleanText(document.getElementById('expUtrNo').value);
+    if(isProcessing) return; var editId = document.getElementById('editExpId').value; var desc = cleanText(document.getElementById('expDesc').value); var amount = parseFloat(document.getElementById('expAmount').value) || 0; var mode = document.getElementById('expPaymentMode').value; var utr = cleanText(document.getElementById('expUtrNo').value);
     if (!desc || amount <= 0) return; if (mode === "UPI" && utr === "") { if(!confirm("⚠️ तुम्ही UPI निवडले आहे पण UTR टाकला नाही. पुढे जायचे का?")) return; }
-    isProcessing = true;
-    
-    var dateStr = getTodayDateStr(); var fullDesc = mode === "UPI" ? `${desc} (UPI${utr ? ': ' + utr : ''})` : desc;
-    var expenses = getDB('Expenses'); 
-    
-    if(editId) {
-        var idx = expenses.findIndex(e => e.expense_id == editId);
-        if(idx > -1) { expenses[idx].description = fullDesc; expenses[idx].amount = amount; expenses[idx].mode = mode; setDB('Expenses', expenses); }
-        document.getElementById('editExpId').value = "";
-    } else {
-        expenses.push({ expense_id: new Date().getTime().toString(), description: fullDesc, amount: amount, expense_date: dateStr, mode: mode }); 
-        if(setDB('Expenses', expenses) && mode === "UPI") { addBankEntry(`दैनंदिन खर्च: ${desc} ${utr ? '(UTR:'+utr+')' : ''}`, 'OUT', amount, dateStr); }
-    }
+    isProcessing = true; var dateStr = getTodayDateStr(); var fullDesc = mode === "UPI" ? `${desc} (UPI${utr ? ': ' + utr : ''})` : desc; var expenses = getDB('Expenses'); 
+    if(editId) { var idx = expenses.findIndex(e => e.expense_id == editId); if(idx > -1) { expenses[idx].description = fullDesc; expenses[idx].amount = amount; expenses[idx].mode = mode; setDB('Expenses', expenses); } document.getElementById('editExpId').value = ""; } 
+    else { expenses.push({ expense_id: new Date().getTime().toString(), description: fullDesc, amount: amount, expense_date: dateStr, mode: mode }); if(setDB('Expenses', expenses) && mode === "UPI") { addBankEntry(`दैनंदिन खर्च: ${desc} ${utr ? '(UTR:'+utr+')' : ''}`, 'OUT', amount, dateStr); } }
     showMessage("💸 खर्च नोंदवला!", "green"); document.getElementById('expenseForm').reset(); document.getElementById('expPaymentMode').value = "Cash"; toggleExpUtrField(); refreshAllData(); setTimeout(() => { isProcessing = false; }, 1000);
 }
-
-function displayExpenses() { var listBody = document.getElementById('expenseList'); if(!listBody) return; listBody.innerHTML = ""; var todayStr = getTodayDateStr(); var todayExps = getDB('Expenses').filter(e => e.expense_date === todayStr).reverse(); if (todayExps.length === 0) { listBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>खर्च नाही.</td></tr>"; return; } todayExps.forEach(exp => { listBody.innerHTML += `<tr><td><b>${exp.description}</b></td><td style='color: red;'>₹${(exp.amount || 0).toFixed(2)}</td><td><button class="edit-btn" onclick="editExpense('${exp.expense_id}')">✏️</button> <button onclick="deleteExpense('${exp.expense_id}')" class="action-btn delete-btn" style="padding:5px;">Del</button></td></tr>`; }); }
-function deleteExpense(id) { if (!confirm("हा खर्च रद्द करायचा आहे का? (बँकेतून झाला असल्यास पैसे परत बँकेत जमा होतील)")) return; var expenses = getDB('Expenses'); var idx = expenses.findIndex(e => e.expense_id == id); if(idx > -1) { var exp = expenses[idx]; if(exp.mode === 'UPI') { addBankEntry(`खर्च रद्द (Refund): ${exp.description}`, 'IN', exp.amount, getTodayDateStr()); } expenses.splice(idx, 1); if(setDB('Expenses', expenses)) { showMessage("🗑️ खर्च रद्द झाला!", "red"); refreshAllData(); } } }
+function displayExpenses() { var listBody = document.getElementById('expenseList'); if(!listBody) return; listBody.innerHTML = ""; var todayStr = getTodayDateStr(); var todayExps = getDB('Expenses').filter(e => e.expense_date === todayStr).reverse(); if (todayExps.length === 0) { listBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>खर्च नाही.</td></tr>"; return; } todayExps.forEach(exp => { listBody.innerHTML += `<tr><td><b>${exp.description}</b></td><td style='color: red;'>₹${(exp.amount || 0).toFixed(2)}</td><td><span onclick="editExpense('${exp.expense_id}')" style="cursor:pointer; font-size:16px;">✏️</span> <span onclick="deleteExpense('${exp.expense_id}')" style="cursor:pointer; font-size:16px; color:red; margin-left:10px;">❌</span></td></tr>`; }); }
+function deleteExpense(id) { if (!confirm("हा खर्च रद्द करायचा आहे का?")) return; var expenses = getDB('Expenses'); var idx = expenses.findIndex(e => e.expense_id == id); if(idx > -1) { var exp = expenses[idx]; if(exp.mode === 'UPI') { addBankEntry(`खर्च रद्द (Refund): ${exp.description}`, 'IN', exp.amount, getTodayDateStr()); } expenses.splice(idx, 1); if(setDB('Expenses', expenses)) { showMessage("🗑️ खर्च रद्द झाला!", "red"); refreshAllData(); } } }
 
 // ==========================================
-// ७. 💳 स्मार्ट पेमेंट पॉप-अप व खातेवही (Edit UI)
+// ७. खातेवही (Smart Modal & Duplicate Protection)
 // ==========================================
-function openPaymentModal(type, id, name, defaultAmount) {
-    document.getElementById('payModalType').value = type; document.getElementById('payModalId').value = id; document.getElementById('payModalName').value = name;
-    var title = ""; if(type === 'supplier') title = "सप्लायर पेमेंट: " + name; if(type === 'customer') title = "ग्राहक जमा: " + name; if(type === 'staff_advance') title = "कर्मचारी उचल: " + name; if(type === 'staff_salary') title = "कर्मचारी पगार वाटप: " + name;
-    document.getElementById('payModalTitle').innerText = title; document.getElementById('payModalAmount').value = defaultAmount > 0 ? defaultAmount : ""; document.getElementById('payModalMode').value = "Cash"; document.getElementById('payModalUtr').value = ""; document.getElementById('payModalUtr').style.display = "none"; document.getElementById('paymentModal').style.display = "flex";
-}
+function openPaymentModal(type, id, name, defaultAmount) { document.getElementById('payModalType').value = type; document.getElementById('payModalId').value = id; document.getElementById('payModalName').value = name; var title = ""; if(type === 'supplier') title = "सप्लायर पेमेंट: " + name; if(type === 'customer') title = "ग्राहक जमा: " + name; if(type === 'staff_advance') title = "कर्मचारी उचल: " + name; if(type === 'staff_salary') title = "कर्मचारी पगार वाटप: " + name; document.getElementById('payModalTitle').innerText = title; document.getElementById('payModalAmount').value = defaultAmount > 0 ? defaultAmount : ""; document.getElementById('payModalMode').value = "Cash"; document.getElementById('payModalUtr').value = ""; document.getElementById('payModalUtr').style.display = "none"; document.getElementById('paymentModal').style.display = "flex"; }
 function closePaymentModal() { document.getElementById('paymentModal').style.display = "none"; }
 function toggleModalUtr() { var mode = document.getElementById('payModalMode').value; document.getElementById('payModalUtr').style.display = mode === "UPI" ? "block" : "none"; }
 
@@ -298,8 +246,8 @@ function confirmPaymentModal() {
     if(isProcessing) return; 
     var type = document.getElementById('payModalType').value; var id = document.getElementById('payModalId').value; var name = document.getElementById('payModalName').value; var amount = parseFloat(document.getElementById('payModalAmount').value); var mode = document.getElementById('payModalMode').value; var utr = cleanText(document.getElementById('payModalUtr').value);
     if(isNaN(amount) || amount <= 0) { alert("⚠️ कृपया योग्य रक्कम टाका!"); return; } if(mode === 'UPI' && utr === "") { if(!confirm("⚠️ तुम्ही UTR नंबर टाकला नाही, तरीही सेव्ह करायचे का?")) return; }
-    isProcessing = true;
-    var dateStr = getTodayDateStr(); var descSuffix = mode === 'UPI' ? (utr ? ` (UPI: ${utr})` : " (UPI)") : " (Cash)"; var pEntry = { date: dateStr, amount: amount, mode: mode, utr: utr }; 
+    isProcessing = true; var dateStr = getTodayDateStr(); var descSuffix = mode === 'UPI' ? (utr ? ` (UPI: ${utr})` : " (UPI)") : " (Cash)"; var pEntry = { date: dateStr, amount: amount, mode: mode, utr: utr }; 
+    
     if(type === 'supplier') { var supps = getDB('Suppliers'); var idx = supps.findIndex(s => s.supplier_id == id); if(idx > -1) { supps[idx].pending_dues -= amount; if(!supps[idx].payment_history) supps[idx].payment_history = []; supps[idx].payment_history.push(pEntry); if(setDB('Suppliers', supps)) { if(mode === 'UPI') addBankEntry(`सप्लायर पेमेंट: ${name}${descSuffix}`, 'OUT', amount, dateStr); showMessage("✅ पेमेंट यशस्वी नोंदवले!", "green"); } } }
     else if(type === 'customer') { var custs = getDB('Customers'); var idx = custs.findIndex(c => c.customer_id == id); if(idx > -1) { custs[idx].ledger_balance -= amount; if(!custs[idx].payment_history) custs[idx].payment_history = []; custs[idx].payment_history.push(pEntry); if(setDB('Customers', custs)) { if(mode === 'UPI') addBankEntry(`ग्राहक जमा: ${name}${descSuffix}`, 'IN', amount, dateStr); showMessage("✅ जमा यशस्वी नोंदवले!", "green"); } } }
     else if(type === 'staff_advance') { var staff = getDB('Staff'); var idx = staff.findIndex(s => s.staff_id == id); if(idx > -1) { staff[idx].advance_balance += amount; if(!staff[idx].payment_history) staff[idx].payment_history = []; staff[idx].payment_history.push({ date: dateStr, amount: amount, mode: mode, utr: utr, type: 'Advance' }); if(setDB('Staff', staff)) { var expenses = getDB('Expenses'); expenses.push({expense_id: new Date().getTime().toString(), description: `ऍडव्हान्स: ${name}${descSuffix}`, amount: amount, expense_date: dateStr, mode: mode}); setDB('Expenses', expenses); if(mode === 'UPI') addBankEntry(`कर्मचारी उचल: ${name}${descSuffix}`, 'OUT', amount, dateStr); showMessage("✅ उचल यशस्वी नोंदवली!", "green"); } } }
@@ -307,15 +255,11 @@ function confirmPaymentModal() {
     closePaymentModal(); refreshAllData(); setTimeout(() => { isProcessing = false; }, 1000); 
 }
 
-// ✏️ Edit Customer
-function editCustomer(id) { 
-    var c = getDB('Customers').find(x => x.customer_id == id); 
-    if(c) { document.getElementById('editCustId').value = c.customer_id; document.getElementById('custName').value = c.name; document.getElementById('custPhone').value = c.phone || ""; document.getElementById('custBalance').value = c.ledger_balance; window.scrollTo(0, document.getElementById('customerForm').offsetTop - 50); showMessage("✏️ ग्राहक माहिती एडिट मोडमध्ये आहे.", "orange"); } 
-}
+function editCustomer(id) { var c = getDB('Customers').find(x => x.customer_id == id); if(c) { document.getElementById('editCustId').value = c.customer_id; document.getElementById('custName').value = c.name; document.getElementById('custPhone').value = c.phone || ""; document.getElementById('custBalance').value = c.ledger_balance; window.scrollTo(0, document.getElementById('customerForm').offsetTop - 50); showMessage("✏️ ग्राहक माहिती एडिट मोडमध्ये आहे.", "orange"); } }
 function saveCustomer() { 
     if(isProcessing) return; var editId = document.getElementById('editCustId').value; var name = cleanText(document.getElementById('custName').value); var phone = cleanText(document.getElementById('custPhone').value); var balance = parseFloat(document.getElementById('custBalance').value) || 0; if (!name) return; isProcessing = true; var custs = getDB('Customers'); 
     if(editId) { var idx = custs.findIndex(c => c.customer_id == editId); if(idx > -1) { custs[idx].name = name; custs[idx].phone = phone; custs[idx].ledger_balance = balance; setDB('Customers', custs); } document.getElementById('editCustId').value = ""; } 
-    else { if(custs.find(c => c.name.toLowerCase() === name.toLowerCase())) { alert("⚠️ हा ग्राहक आधीपासूनच जोडलेला आहे!"); isProcessing = false; return; } var hist = []; if(balance > 0) { hist.push({ date: getTodayDateStr(), amount: balance, mode: "Opening Balance", utr: "" }); } custs.push({customer_id: new Date().getTime().toString(), name, phone, ledger_balance: balance, payment_history: hist}); setDB('Customers', custs); }
+    else { if(custs.find(c => c.name.trim().toLowerCase() === name.trim().toLowerCase())) { alert("⚠️ हा ग्राहक आधीपासूनच जोडलेला आहे!"); isProcessing = false; return; } var hist = []; if(balance > 0) { hist.push({ date: getTodayDateStr(), amount: balance, mode: "Opening Balance", utr: "" }); } custs.push({customer_id: new Date().getTime().toString(), name: name.trim(), phone, ledger_balance: balance, payment_history: hist}); setDB('Customers', custs); }
     showMessage("📓 ग्राहक सेव्ह झाला!", "green"); document.getElementById('customerForm').reset(); refreshAllData(); setTimeout(() => { isProcessing = false; }, 1000); 
 }
 function displayCustomers() { 
@@ -323,19 +267,15 @@ function displayCustomers() {
     custs.forEach(c => { 
         var balText = c.ledger_balance <= 0 ? `₹${(c.ledger_balance || 0).toFixed(2)}` : `₹${(c.ledger_balance || 0).toFixed(2)}`; var balColor = c.ledger_balance <= 0 ? "green" : "red"; var histHTML = ""; 
         if(c.payment_history && c.payment_history.length > 0) { histHTML = "<div style='margin-top:5px; border-top:1px dashed #ccc; padding-top:3px;'>"; c.payment_history.slice(-3).reverse().forEach(p => { if(p.mode === 'Opening Balance') { histHTML += `<div style="font-size:10px; color:#2980b9; font-weight:bold;">${p.date}: सुरुवातीची बाकी ₹${p.amount}</div>`; } else { var utrTxt = p.utr ? ` (${p.utr})` : ""; var icon = p.mode === 'UPI' ? '📱' : '💵'; histHTML += `<div style="font-size:10px; color:gray;">${p.date}: ${icon} ₹${p.amount}${utrTxt}</div>`; } }); histHTML += "</div>"; }
-        listBody.innerHTML += `<tr><td><b>${c.name}</b> <button class="edit-btn" style="float:right;" onclick="editCustomer('${c.customer_id}')">✏️</button>${histHTML}</td><td style='color: ${balColor}; vertical-align: middle; font-weight:bold;'>${balText}</td><td style="vertical-align: middle;"><button onclick="payDues('${c.customer_id}', '${c.name}', ${c.ledger_balance})" class="btn-save" style="padding: 5px;">जमा करा</button></td></tr>`; 
+        listBody.innerHTML += `<tr><td><b>${c.name}</b> <span onclick="editCustomer('${c.customer_id}')" style="cursor:pointer; float:right; font-size:16px;">✏️</span>${histHTML}</td><td style='color: ${balColor}; vertical-align: middle; font-weight:bold;'>${balText}</td><td style="vertical-align: middle;"><button onclick="payDues('${c.customer_id}', '${c.name}', ${c.ledger_balance})" class="btn-save" style="padding: 5px;">जमा करा</button></td></tr>`; 
     }); 
 }
 
-// ✏️ Edit Supplier
-function editSupplier(id) { 
-    var s = getDB('Suppliers').find(x => x.supplier_id == id); 
-    if(s) { document.getElementById('editSuppId').value = s.supplier_id; document.getElementById('suppName').value = s.name; document.getElementById('suppPhone').value = s.phone || ""; document.getElementById('suppBalance').value = s.pending_dues; window.scrollTo(0, document.getElementById('supplierForm').offsetTop - 50); showMessage("✏️ सप्लायर माहिती एडिट मोडमध्ये आहे.", "orange"); } 
-}
+function editSupplier(id) { var s = getDB('Suppliers').find(x => x.supplier_id == id); if(s) { document.getElementById('editSuppId').value = s.supplier_id; document.getElementById('suppName').value = s.name; document.getElementById('suppPhone').value = s.phone || ""; document.getElementById('suppBalance').value = s.pending_dues; window.scrollTo(0, document.getElementById('supplierForm').offsetTop - 50); showMessage("✏️ सप्लायर माहिती एडिट मोडमध्ये आहे.", "orange"); } }
 function saveSupplier() { 
     if(isProcessing) return; var editId = document.getElementById('editSuppId').value; var name = cleanText(document.getElementById('suppName').value); var phone = cleanText(document.getElementById('suppPhone').value); var balance = parseFloat(document.getElementById('suppBalance').value) || 0; if (!name) return; isProcessing = true; var supps = getDB('Suppliers'); 
     if(editId) { var idx = supps.findIndex(s => s.supplier_id == editId); if(idx > -1) { supps[idx].name = name; supps[idx].phone = phone; supps[idx].pending_dues = balance; setDB('Suppliers', supps); } document.getElementById('editSuppId').value = ""; } 
-    else { if(supps.find(s => s.name.toLowerCase() === name.toLowerCase())) { alert("⚠️ हा सप्लायर आधीपासूनच जोडलेला आहे!"); isProcessing = false; return; } var bHist = []; if(balance > 0) { bHist.push({ bill_date: getTodayDateStr(), amount: balance, due_date: getTodayDateStr(), is_paid: false, is_opening: true }); } supps.push({supplier_id: new Date().getTime().toString(), name, phone, pending_dues: balance, bill_history: bHist, payment_history: []}); setDB('Suppliers', supps); }
+    else { if(supps.find(s => s.name.trim().toLowerCase() === name.trim().toLowerCase())) { alert("⚠️ हा सप्लायर आधीपासूनच जोडलेला आहे!"); isProcessing = false; return; } var bHist = []; if(balance > 0) { bHist.push({ bill_date: getTodayDateStr(), amount: balance, due_date: getTodayDateStr(), is_paid: false, is_opening: true }); } supps.push({supplier_id: new Date().getTime().toString(), name: name.trim(), phone, pending_dues: balance, bill_history: bHist, payment_history: []}); setDB('Suppliers', supps); }
     showMessage("🚚 सप्लायर सेव्ह झाला!", "green"); document.getElementById('supplierForm').reset(); loadSupplierDropdown(); refreshAllData(); setTimeout(() => { isProcessing = false; }, 1000); 
 }
 function displaySuppliers() { 
@@ -343,26 +283,22 @@ function displaySuppliers() {
     supps.forEach(s => { 
         var dueInfoHTML = ""; if (s.bill_history) { s.bill_history.forEach(bill => { if (!bill.is_paid) { if(bill.is_opening) { dueInfoHTML += `<div style="font-size: 11px; color: #2980b9; font-weight:bold; border-bottom: 1px solid #eee; padding: 5px 0;">${bill.bill_date} --- सुरुवातीची बाकी ₹${bill.amount.toFixed(2)}</div>`; } else { var isOverdue = today > bill.due_date; var color = isOverdue ? "red" : "#e67e22"; var warning = isOverdue ? "🚨 मुदत संपली!" : "⏳ देय आहे"; dueInfoHTML += `<div style="font-size: 11px; color: ${color}; border-bottom: 1px solid #eee; padding: 5px 0;">${bill.bill_date} --- ₹${bill.amount.toFixed(2)} --- <b>${bill.due_date}</b> (${warning})</div>`; } } }); }
         var histHTML = ""; if(s.payment_history && s.payment_history.length > 0) { histHTML += "<div style='margin-top:5px; border-top:1px dashed #ccc; padding-top:3px;'>"; s.payment_history.slice(-3).reverse().forEach(p => { var utrTxt = p.utr ? ` (${p.utr})` : ""; var icon = p.mode === 'UPI' ? '📱' : '💵'; histHTML += `<div style="font-size:10px; color:gray;">${p.date}: ${icon} ₹${p.amount}${utrTxt}</div>`; }); histHTML += "</div>"; }
-        listBody.innerHTML += `<tr><td><b>${s.name}</b> <button class="edit-btn" style="float:right;" onclick="editSupplier('${s.supplier_id}')">✏️</button><br>${dueInfoHTML}${histHTML}</td><td style='color: red; font-weight: bold; vertical-align: middle;'>₹${(s.pending_dues || 0).toFixed(2)}</td><td style="vertical-align: middle;"><button onclick="paySupplier('${s.supplier_id}', '${s.name}', ${s.pending_dues})" class="btn-save" style="padding:5px;">पैसे द्या</button></td></tr>`; 
+        listBody.innerHTML += `<tr><td><b>${s.name}</b> <span onclick="editSupplier('${s.supplier_id}')" style="cursor:pointer; float:right; font-size:16px;">✏️</span><br>${dueInfoHTML}${histHTML}</td><td style='color: red; font-weight: bold; vertical-align: middle;'>₹${(s.pending_dues || 0).toFixed(2)}</td><td style="vertical-align: middle;"><button onclick="paySupplier('${s.supplier_id}', '${s.name}', ${s.pending_dues})" class="btn-save" style="padding:5px;">पैसे द्या</button></td></tr>`; 
     }); 
 }
 
-// ✏️ Edit Staff
-function editStaff(id) { 
-    var s = getDB('Staff').find(x => x.staff_id == id); 
-    if(s) { document.getElementById('editStaffId').value = s.staff_id; document.getElementById('staffName').value = s.name; document.getElementById('staffSalary').value = s.salary || 0; document.getElementById('staffAdvance').value = s.advance_balance || 0; window.scrollTo(0, document.getElementById('staffForm').offsetTop - 50); showMessage("✏️ कर्मचारी माहिती एडिट मोडमध्ये आहे.", "orange"); } 
-}
+function editStaff(id) { var s = getDB('Staff').find(x => x.staff_id == id); if(s) { document.getElementById('editStaffId').value = s.staff_id; document.getElementById('staffName').value = s.name; document.getElementById('staffSalary').value = s.salary || 0; document.getElementById('staffAdvance').value = s.advance_balance || 0; window.scrollTo(0, document.getElementById('staffForm').offsetTop - 50); showMessage("✏️ कर्मचारी माहिती एडिट मोडमध्ये आहे.", "orange"); } }
 function saveStaff() { 
     if(isProcessing) return; var editId = document.getElementById('editStaffId').value; var name = cleanText(document.getElementById('staffName').value); var salary = parseFloat(document.getElementById('staffSalary').value) || 0; var advance = parseFloat(document.getElementById('staffAdvance').value) || 0; if (!name) return; isProcessing = true; var staff = getDB('Staff'); 
     if(editId) { var idx = staff.findIndex(s => s.staff_id == editId); if(idx > -1) { staff[idx].name = name; staff[idx].salary = salary; staff[idx].advance_balance = advance; setDB('Staff', staff); } document.getElementById('editStaffId').value = ""; } 
-    else { if(staff.find(s => s.name.toLowerCase() === name.toLowerCase())) { alert("⚠️ हा कर्मचारी आधीपासूनच जोडलेला आहे!"); isProcessing = false; return; } staff.push({staff_id: new Date().getTime().toString(), name, salary, advance_balance: advance, payment_history: []}); setDB('Staff', staff); }
+    else { if(staff.find(s => s.name.trim().toLowerCase() === name.trim().toLowerCase())) { alert("⚠️ हा कर्मचारी आधीपासूनच जोडलेला आहे!"); isProcessing = false; return; } staff.push({staff_id: new Date().getTime().toString(), name: name.trim(), salary, advance_balance: advance, payment_history: []}); setDB('Staff', staff); }
     showMessage("👨‍💼 कर्मचारी सेव्ह झाला!", "green"); document.getElementById('staffForm').reset(); refreshAllData(); setTimeout(() => { isProcessing = false; }, 1000); 
 }
 function displayStaff() { 
     var listBody = document.getElementById('staffList'); if(!listBody) return; listBody.innerHTML = ""; var staff = getDB('Staff').sort((a,b) => b.advance_balance - a.advance_balance); if (staff.length === 0) { listBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>कर्मचारी नाहीत.</td></tr>"; return; } 
     staff.forEach(s => { 
         var histHTML = ""; if(s.payment_history && s.payment_history.length > 0) { histHTML = "<div style='margin-top:5px; border-top:1px dashed #ccc; padding-top:3px;'>"; s.payment_history.slice(-3).reverse().forEach(p => { var txt = p.type === 'Salary' ? `पगार दिला` : `उचल दिली`; var icon = p.mode === 'UPI' ? '📱' : '💵'; histHTML += `<div style="font-size:10px; color:gray;">${p.date}: ${icon} ${txt} ₹${p.amount}</div>`; }); histHTML += "</div>"; }
-        listBody.innerHTML += `<tr><td><b>${s.name}</b> <button class="edit-btn" style="float:right;" onclick="editStaff('${s.staff_id}')">✏️</button><br><small>पगार: ₹${(s.salary || 0)}</small>${histHTML}</td><td style='color: ${s.advance_balance > 0 ? "red" : "green"}; vertical-align: middle; font-weight:bold;'>₹${(s.advance_balance || 0).toFixed(2)}</td><td style="vertical-align: middle;"><button onclick="payAdvance('${s.staff_id}', '${s.name}')" class="btn-save" style="background-color: #00897b; padding: 5px; width: 100%; margin-bottom: 5px;">उचल द्या</button><br><button onclick="paySalary('${s.staff_id}', '${s.name}', ${s.salary || 0}, ${s.advance_balance || 0})" class="btn-save" style="background-color: #2980b9; padding: 5px; width: 100%;">पगार द्या</button></td></tr>`; 
+        listBody.innerHTML += `<tr><td><b>${s.name}</b> <span onclick="editStaff('${s.staff_id}')" style="cursor:pointer; float:right; font-size:16px;">✏️</span><br><small>पगार: ₹${(s.salary || 0)}</small>${histHTML}</td><td style='color: ${s.advance_balance > 0 ? "red" : "green"}; vertical-align: middle; font-weight:bold;'>₹${(s.advance_balance || 0).toFixed(2)}</td><td style="vertical-align: middle;"><button onclick="payAdvance('${s.staff_id}', '${s.name}')" class="btn-save" style="background-color: #00897b; padding: 5px; width: 100%; margin-bottom: 5px;">उचल द्या</button><br><button onclick="paySalary('${s.staff_id}', '${s.name}', ${s.salary || 0}, ${s.advance_balance || 0})" class="btn-save" style="background-color: #2980b9; padding: 5px; width: 100%;">पगार द्या</button></td></tr>`; 
     }); 
 }
 
