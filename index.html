@@ -6,16 +6,23 @@
     <title>Medical Shop Ultra-Pro App</title>
     <link rel="stylesheet" href="style.css">
     <style>
+        /* 🎤 Mic Button & Input UI Fix */
         .input-group { display: flex !important; flex-direction: row !important; gap: 8px !important; margin-bottom: 10px !important; width: 100% !important; align-items: center !important; }
         .input-group input { flex: 1 !important; min-width: 0 !important; width: 100% !important; margin-bottom: 0 !important; padding: 12px !important; font-size: 16px !important; border: 2px solid #3498db !important; border-radius: 5px !important; }
         .mic-btn { width: 50px !important; height: 50px !important; flex-shrink: 0 !important; background-color: #e8f8f5 !important; border: 2px solid #1abc9c !important; border-radius: 8px !important; font-size: 22px !important; display: flex !important; align-items: center !important; justify-content: center !important; cursor: pointer !important; margin: 0 !important; padding: 0 !important; }
         .mic-btn:active { background-color: #1abc9c !important; color: white !important; }
 
+        /* 📷 Scanner UI Fix */
         #qr-reader, #qr-reader-purchase { border: 2px solid #ff9800 !important; border-radius: 8px !important; padding: 10px !important; background: #fff !important; }
         #qr-reader button, #qr-reader-purchase button { background-color: #3498db !important; color: white !important; border: none !important; padding: 10px 15px !important; border-radius: 5px !important; font-weight: bold !important; margin: 5px 2px !important; cursor: pointer !important; font-size: 14px !important; }
         #qr-reader button:active, #qr-reader-purchase button:active { background-color: #2980b9 !important; }
         #qr-reader select, #qr-reader-purchase select { padding: 8px !important; border: 2px solid #bdc3c7 !important; border-radius: 5px !important; width: 100% !important; margin-bottom: 10px !important; background-color: #f8f9fa !important; font-size: 14px !important; font-weight: bold !important; }
 
+        /* 💳 Payment Modal CSS */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 10005; padding: 10px; }
+        .modal-box { background: #fff; padding: 20px; border-radius: 10px; width: 100%; max-width: 350px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+
+        /* 🖨️ Thermal POS Printer CSS */
         @media print {
             body * { visibility: hidden; }
             #invoiceSection, #invoiceSection * { visibility: visible; }
@@ -80,16 +87,28 @@
             <div id="alertMessages" style="color: #d32f2f; font-size: 14px; background-color: #fff; padding: 10px; border-radius: 5px; display: none; border: 1px solid #f5b7b1;"></div>
             <div style="display: flex; gap: 10px; margin-top: 15px;" class="hide-on-print"><button type="button" class="btn-settings" onclick="printDashboard()" style="background-color: #607d8b; flex: 1;">🖨️ रिपोर्ट प्रिंट</button><button type="button" class="btn-settings" onclick="shareDashboardWhatsApp()" style="background-color: #25D366; flex: 1;">📲 रिपोर्ट WhatsApp</button></div>
         </div>
+
         <div class="section-box" style="background-color: #e8f5e9;">
             <h2>📝 आजची बिले (Cancel Bill)</h2>
             <div style="overflow-x: auto;"><table><thead><tr><th>ग्राहक / डॉक्टर</th><th>रक्कम</th><th>Action</th></tr></thead><tbody id="todayBillsList"></tbody></table></div>
         </div>
+
         <div class="section-box" style="background-color: #fff3e0;">
             <h2>💸 दैनंदिन खर्च (Daily Expenses)</h2>
             <form id="expenseForm" onsubmit="return false;">
-                <div class="input-group"><input type="text" id="expDesc" placeholder="खर्चाचे कारण (उदा. चहा)" required><button type="button" class="mic-btn" onclick="startDictation('expDesc')">🎤</button></div>
-                <input type="number" id="expAmount" placeholder="रक्कम (₹)" required>
-                <button type="button" class="btn-settings" onclick="saveExpense()" style="background-color: #ff9800;">खर्च नोंदवा</button>
+                <div class="input-group">
+                    <input type="text" id="expDesc" placeholder="खर्चाचे कारण (उदा. चहा)" required>
+                    <button type="button" class="mic-btn" onclick="startDictation('expDesc')">🎤</button>
+                </div>
+                <input type="number" id="expAmount" placeholder="रक्कम (₹)" required style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #3498db; border-radius: 5px; box-sizing: border-box; font-size: 16px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 5px; border: 1px solid #1abc9c;">
+                    <select id="expPaymentMode" onchange="toggleExpUtrField()" style="flex: 1; font-weight: bold; border: 1px solid #1abc9c; border-radius: 5px; padding: 8px;">
+                        <option value="Cash">💵 रोख गल्ल्यातून (Cash)</option>
+                        <option value="UPI">📱 बँकेतून (UPI)</option>
+                    </select>
+                    <input type="text" id="expUtrNo" placeholder="Paste UTR No." style="flex: 1.5; display: none; margin: 0; border: 1px solid #3498db; padding: 8px; font-size: 14px; border-radius: 5px;">
+                </div>
+                <button type="button" class="btn-settings" onclick="saveExpense()" style="background-color: #ff9800; width: 100%; font-size: 16px;">खर्च नोंदवा</button>
             </form>
             <h3 style="margin-top: 15px;">📅 आजचा खर्च</h3>
             <div style="overflow-x: auto;"><table><thead><tr><th>कारण</th><th style="color: #d32f2f;">रक्कम</th><th>Action</th></tr></thead><tbody id="expenseList"></tbody></table></div>
@@ -201,32 +220,20 @@
     </div>
 
     <div id="ledgerTab" class="tab-content">
-        
         <div class="section-box" style="background-color: #e3f2fd;" id="bankSectionBox">
             <h2>🏦 बँक व रोख (Bank Tracker)</h2>
             <h3 style="color: #1565c0; margin-top: 0;">बँक बॅलन्स: <span id="bankBalanceDisplay" style="font-size: 22px;">₹0.00</span></h3>
             <form id="bankForm" onsubmit="return false;">
-                <div class="input-group">
-                    <input type="text" id="bankDesc" placeholder="व्यवहाराचे कारण (उदा. कॅश भरली)" required>
-                    <button type="button" class="mic-btn" onclick="startDictation('bankDesc')">🎤</button>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <select id="bankType" style="flex: 1; padding: 10px; font-weight:bold; border: 1px solid #1565c0; border-radius:5px;">
-                        <option value="IN">बँकेत जमा (IN +)</option>
-                        <option value="OUT">बँकेतून नावे (OUT -)</option>
-                    </select>
-                    <input type="number" id="bankAmount" placeholder="रक्कम (₹)" required style="flex: 1;">
-                </div>
+                <div class="input-group"><input type="text" id="bankDesc" placeholder="व्यवहाराचे कारण (उदा. कॅश भरली)" required><button type="button" class="mic-btn" onclick="startDictation('bankDesc')">🎤</button></div>
+                <div style="display: flex; gap: 10px;"><select id="bankType" style="flex: 1; padding: 10px; font-weight:bold; border: 1px solid #1565c0; border-radius:5px;"><option value="IN">बँकेत जमा (IN +)</option><option value="OUT">बँकेतून नावे (OUT -)</option></select><input type="number" id="bankAmount" placeholder="रक्कम (₹)" required style="flex: 1;"></div>
                 <button type="button" class="btn-settings" onclick="saveBankTransaction()" style="background-color: #1565c0; margin-top:10px;">बँक एन्ट्री सेव्ह करा</button>
             </form>
-            <div style="overflow-x: auto; margin-top: 15px;">
-                <table><thead><tr><th>तारीख व कारण</th><th style="color: green;">जमा (IN)</th><th style="color: red;">नावे (OUT)</th></tr></thead><tbody id="bankList"></tbody></table>
-            </div>
+            <div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>तारीख व कारण</th><th style="color: green;">जमा (IN)</th><th style="color: red;">नावे (OUT)</th></tr></thead><tbody id="bankList"></tbody></table></div>
         </div>
 
-        <div class="section-box" style="background-color: #e0f2f1;" id="staffSectionBox"><h2>👨‍💼 कर्मचारी खातेवही</h2><form id="staffForm" onsubmit="return false;"><div class="input-group"><input type="text" id="staffName" placeholder="कर्मचाऱ्याचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('staffName')">🎤</button></div><div style="display: flex; gap: 10px;"><input type="number" id="staffSalary" placeholder="महिना पगार (₹)" style="flex: 1;"><input type="number" id="staffAdvance" placeholder="सध्याची उचल (₹)" value="0" style="flex: 1;"></div><button type="button" class="btn-settings" onclick="saveStaff()" style="background-color: #00897b;">कर्मचारी जोडा</button></form></div>
-        <div class="section-box" style="background-color: #fce4ec;"><h2>📓 ग्राहक उधारी व जमा</h2><form id="customerForm" onsubmit="return false;"><div class="input-group"><input type="text" id="custName" placeholder="ग्राहकाचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('custName')">🎤</button></div><input type="text" id="custPhone" placeholder="मोबाईल नंबर"><input type="number" id="custBalance" placeholder="सुरुवातीची बाकी (₹)" value="0"><button type="button" class="btn-ledger" onclick="saveCustomer()">नवीन ग्राहक जोडा</button></form><div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>ग्राहक</th><th>बाकी/जमा (₹)</th><th>Action</th></tr></thead><tbody id="customerList"></tbody></table></div></div>
-        <div class="section-box" style="background-color: #f3e5f5;" id="supplierSectionBox"><h2>🚚 सप्लायर देय</h2><form id="supplierForm" onsubmit="return false;"><div class="input-group"><input type="text" id="suppName" placeholder="होलसेलरचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('suppName')">🎤</button></div><input type="text" id="suppPhone" placeholder="मोबाईल नंबर"><input type="number" id="suppBalance" placeholder="सुरुवातीचे देय (₹)" value="0"><button type="button" class="btn-settings" onclick="saveSupplier()" style="background-color: #8e24aa;">नवीन सप्लायर जोडा</button></form><div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>एजन्सी</th><th style="color: #d32f2f;">देय (₹)</th><th>Action</th></tr></thead><tbody id="supplierList"></tbody></table></div></div>
+        <div class="section-box" style="background-color: #e0f2f1;" id="staffSectionBox"><h2>👨‍💼 कर्मचारी खातेवही</h2><form id="staffForm" onsubmit="return false;"><div class="input-group"><input type="text" id="staffName" placeholder="कर्मचाऱ्याचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('staffName')">🎤</button></div><div style="display: flex; gap: 10px;"><input type="number" id="staffSalary" placeholder="महिना पगार (₹)" style="flex: 1;"><input type="number" id="staffAdvance" placeholder="सध्याची उचल (₹)" value="0" style="flex: 1;"></div><button type="button" class="btn-settings" onclick="saveStaff()" style="background-color: #00897b;">कर्मचारी जोडा</button></form><div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>कर्मचारी</th><th>उचल (₹)</th><th>Action</th></tr></thead><tbody id="staffList"></tbody></table></div></div>
+        <div class="section-box" style="background-color: #fce4ec;"><h2>📓 ग्राहक उधारी व जमा</h2><form id="customerForm" onsubmit="return false;"><div class="input-group"><input type="text" id="custName" placeholder="ग्राहकाचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('custName')">🎤</button></div><input type="text" id="custPhone" placeholder="मोबाईल नंबर" style="margin-bottom:10px;"><input type="number" id="custBalance" placeholder="सुरुवातीची बाकी (₹)" value="0" style="margin-bottom:10px;"><button type="button" class="btn-ledger" onclick="saveCustomer()">नवीन ग्राहक जोडा</button></form><div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>ग्राहक</th><th>बाकी/जमा (₹)</th><th>Action</th></tr></thead><tbody id="customerList"></tbody></table></div></div>
+        <div class="section-box" style="background-color: #f3e5f5;" id="supplierSectionBox"><h2>🚚 सप्लायर देय</h2><form id="supplierForm" onsubmit="return false;"><div class="input-group"><input type="text" id="suppName" placeholder="होलसेलरचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('suppName')">🎤</button></div><input type="text" id="suppPhone" placeholder="मोबाईल नंबर" style="margin-bottom:10px;"><input type="number" id="suppBalance" placeholder="सुरुवातीचे देय (₹)" value="0" style="margin-bottom:10px;"><button type="button" class="btn-settings" onclick="saveSupplier()" style="background-color: #8e24aa;">नवीन सप्लायर जोडा</button></form><div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>एजन्सी</th><th style="color: #d32f2f;">देय (₹)</th><th>Action</th></tr></thead><tbody id="supplierList"></tbody></table></div></div>
     </div>
 
     <div id="settingsTab" class="tab-content">
@@ -272,6 +279,31 @@
         <div class="hide-on-print" style="margin-top: 20px; text-align: center;">
             <button type="button" class="btn-save" onclick="printInvoice()" style="width: 100%; margin-bottom: 10px;">🖨️ पावती प्रिंट करा</button>
             <button type="button" class="btn-settings" onclick="sendWhatsAppBill()" style="background-color: #25D366; width: 100%;">📲 WhatsApp वर पाठवा</button>
+        </div>
+    </div>
+
+    <div id="paymentModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="payModalTitle" style="border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-top: 0; color: #2c3e50;">पेमेंट नोंदवा</h3>
+            <input type="hidden" id="payModalType">
+            <input type="hidden" id="payModalId">
+            <input type="hidden" id="payModalName">
+            
+            <label style="font-weight: bold; font-size: 14px;">रक्कम (₹):</label>
+            <input type="number" id="payModalAmount" placeholder="रक्कम टाका" style="width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 2px solid #bdc3c7; border-radius: 5px; font-size: 18px; font-weight: bold; box-sizing: border-box;">
+            
+            <label style="font-weight: bold; font-size: 14px;">पेमेंट मोड:</label>
+            <select id="payModalMode" onchange="toggleModalUtr()" style="width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 2px solid #3498db; border-radius: 5px; font-size: 16px; font-weight: bold; box-sizing: border-box;">
+                <option value="Cash">💵 रोख (Cash)</option>
+                <option value="UPI">📱 बँकेतून / UPI</option>
+            </select>
+            
+            <input type="text" id="payModalUtr" placeholder="UTR किंवा Reference No." style="display: none; width: 100%; padding: 10px; margin-bottom: 15px; border: 2px solid #9b59b6; border-radius: 5px; font-size: 14px; box-sizing: border-box;">
+            
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="closePaymentModal()" style="flex: 1; padding: 12px; background: #95a5a6; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold;">रद्द</button>
+                <button type="button" onclick="confirmPaymentModal()" style="flex: 1; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold;">सेव्ह करा</button>
+            </div>
         </div>
     </div>
 
