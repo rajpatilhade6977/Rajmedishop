@@ -6,29 +6,17 @@
     <title>Medical Shop Ultra-Pro App</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* 🎤 Mic Button & Input UI Fix */
         .input-group { display: flex !important; flex-direction: row !important; gap: 8px !important; margin-bottom: 10px !important; width: 100% !important; align-items: center !important; }
         .input-group input { flex: 1 !important; min-width: 0 !important; width: 100% !important; margin-bottom: 0 !important; padding: 12px !important; font-size: 16px !important; border: 2px solid #3498db !important; border-radius: 5px !important; }
         .mic-btn { width: 50px !important; height: 50px !important; flex-shrink: 0 !important; background-color: #e8f8f5 !important; border: 2px solid #1abc9c !important; border-radius: 8px !important; font-size: 22px !important; display: flex !important; align-items: center !important; justify-content: center !important; cursor: pointer !important; margin: 0 !important; padding: 0 !important; }
         .mic-btn:active { background-color: #1abc9c !important; color: white !important; }
-
-        /* 📷 Scanner UI Fix */
         #qr-reader, #qr-reader-purchase { border: 2px solid #ff9800 !important; border-radius: 8px !important; padding: 10px !important; background: #fff !important; }
         #qr-reader button, #qr-reader-purchase button { background-color: #3498db !important; color: white !important; border: none !important; padding: 10px 15px !important; border-radius: 5px !important; font-weight: bold !important; margin: 5px 2px !important; cursor: pointer !important; font-size: 14px !important; }
         #qr-reader button:active, #qr-reader-purchase button:active { background-color: #2980b9 !important; }
         #qr-reader select, #qr-reader-purchase select { padding: 8px !important; border: 2px solid #bdc3c7 !important; border-radius: 5px !important; width: 100% !important; margin-bottom: 10px !important; background-color: #f8f9fa !important; font-size: 14px !important; font-weight: bold !important; }
-
-        /* 💳 Payment Modal CSS */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 10005; padding: 10px; }
         .modal-box { background: #fff; padding: 20px; border-radius: 10px; width: 100%; max-width: 350px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-
-        /* 🖨️ Thermal POS Printer CSS */
-        @media print {
-            body * { visibility: hidden; }
-            #invoiceSection, #invoiceSection * { visibility: visible; }
-            #invoiceSection { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; border: none; font-family: 'Courier New', Courier, monospace !important; }
-            .hide-on-print { display: none !important; }
-        }
+        @media print { body * { visibility: hidden; } #invoiceSection, #invoiceSection * { visibility: visible; } #invoiceSection { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; border: none; font-family: 'Courier New', Courier, monospace !important; } .hide-on-print { display: none !important; } }
         .pos-receipt { max-width: 380px; margin: 0 auto; font-family: 'Courier New', Courier, monospace; font-size: 13px; color: #000; background: #fff; padding: 15px; border: 1px dashed #555; }
         .pos-header { text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
         .pos-header h2 { margin: 0; font-size: 18px; font-weight: bold; text-transform: uppercase; }
@@ -175,8 +163,16 @@
                     <select id="unitType" style="flex: 1; font-weight: bold;" required><option value="गोळी (Tab)">💊 गोळी</option><option value="बाटली (Bottle)">🧴 बाटली</option><option value="इंजेक्शन (Inj)">💉 इंजेक्शन</option><option value="मलम (Tube)">मलम</option></select>
                 </div>
                 <div class="input-group"><input type="text" id="saltName" placeholder="घटक / Salt Name"><button type="button" class="mic-btn" onclick="startDictation('saltName')">🎤</button></div>
+                
                 <label style="display: block; margin-top: 5px; background: #fff3e0; padding: 10px; border-radius: 5px; border: 1px solid #ff9800; font-weight: bold; color: #d35400;"><input type="checkbox" id="rxRequired" style="transform: scale(1.2); margin-right: 5px;"> ⚠️ हे प्रतिबंधित (Rx) औषध आहे</label>
+                
                 <div class="input-group" style="margin-top: 10px;"><input type="text" id="medCompany" placeholder="कंपनीचे नाव"><button type="button" class="mic-btn" onclick="startDictation('medCompany')">🎤</button></div>
+                
+                <div class="input-group" style="margin-top: 5px;">
+                    <input type="text" id="medRackNo" placeholder="रॅक नंबर (उदा. Rack A-1) (Optional)" style="border: 1px solid #9b59b6; background: #f4ecf7;">
+                    <button type="button" class="mic-btn" onclick="startDictation('medRackNo')">🎤</button>
+                </div>
+
                 <input type="text" id="batchNo" placeholder="BATCH NO / बारकोड" style="margin-bottom:10px;">
                 <label style="font-weight: bold; display: block;">EXP.DT (तारीख):</label><input type="date" id="expiryDate" required>
                 
@@ -249,7 +245,6 @@
             <p id="invShopGstinWrapper" style="margin: 3px 0; display: none; justify-content: center;">GSTIN: <span id="invShopGstin"></span></p>
             <h3 style="margin: 5px 0 0 0; font-size: 15px; border-top:1px solid #000; padding-top:5px;">BILL OF SUPPLY</h3>
         </div>
-        
         <div class="pos-meta">
             <p><span><b>Name :</b> <span id="invCustomer"></span></span></p>
             <p id="invCustGstinWrapper" style="display:none;"><span><b>GSTIN:</b> <span id="invCustGstin"></span></span></p>
@@ -258,52 +253,23 @@
             <p style="margin: 3px 0; display: flex; justify-content: space-between;"><span><b>Mode:</b> <span id="invPayMode"></span></span><span id="invUtrWrapper" style="display:none;"><b>UTR:</b> <span id="invUtrNo"></span></span></p>
             <p><b id="billTypeLabel" style="display: none;">(CREDIT BILL)</b></p>
         </div>
-
-        <table class="pos-table">
-            <thead><tr><th style="width: 15%;">Qty</th><th style="width: 40%;">Description</th><th style="width: 15%;">Batch</th><th style="width: 15%;">Exp</th><th style="width: 15%; text-align: right;">Amount</th></tr></thead>
-            <tbody id="invoiceBody"></tbody>
-        </table>
-
+        <table class="pos-table"><thead><tr><th style="width: 15%;">Qty</th><th style="width: 40%;">Description</th><th style="width: 15%;">Batch</th><th style="width: 15%;">Exp</th><th style="width: 15%; text-align: right;">Amount</th></tr></thead><tbody id="invoiceBody"></tbody></table>
         <div id="invDiscountRow" style="text-align: right; padding: 5px 0; font-size: 12px; display: none;">Discount: <span id="invDiscountAmt"></span></div>
         <div class="pos-total">Net Amount : <span id="invTotal"></span></div>
-
-        <div class="pos-footer">
-            <p style="text-align: left; margin: 2px 0;">E & O.E. Subject to Local Jurisdiction.</p>
-            <p style="text-align: left; margin: 2px 0;">* I/We declare that this invoice shows actual price of the goods and all particulars are true and correct.</p><br><br>
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px;">
-                <span style="border-top: 1px solid #000; padding-top: 2px;">Pharmacist</span>
-                <div style="text-align: right;"><span style="font-size: 10px;">For <span id="invFooterShopName"></span></span><br><br><span style="border-top: 1px solid #000; padding-top: 2px;">Signature</span></div>
-            </div>
-        </div>
-        
-        <div class="hide-on-print" style="margin-top: 20px; text-align: center;">
-            <button type="button" class="btn-save" onclick="printInvoice()" style="width: 100%; margin-bottom: 10px;">🖨️ पावती प्रिंट करा</button>
-            <button type="button" class="btn-settings" onclick="sendWhatsAppBill()" style="background-color: #25D366; width: 100%;">📲 WhatsApp वर पाठवा</button>
-        </div>
+        <div class="pos-footer"><p style="text-align: left; margin: 2px 0;">E & O.E. Subject to Local Jurisdiction.</p><p style="text-align: left; margin: 2px 0;">* I/We declare that this invoice shows actual price of the goods and all particulars are true and correct.</p><br><br><div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px;"><span style="border-top: 1px solid #000; padding-top: 2px;">Pharmacist</span><div style="text-align: right;"><span style="font-size: 10px;">For <span id="invFooterShopName"></span></span><br><br><span style="border-top: 1px solid #000; padding-top: 2px;">Signature</span></div></div></div>
+        <div class="hide-on-print" style="margin-top: 20px; text-align: center;"><button type="button" class="btn-save" onclick="printInvoice()" style="width: 100%; margin-bottom: 10px;">🖨️ पावती प्रिंट करा</button><button type="button" class="btn-settings" onclick="sendWhatsAppBill()" style="background-color: #25D366; width: 100%;">📲 WhatsApp वर पाठवा</button></div>
     </div>
 
     <div id="paymentModal" class="modal-overlay">
         <div class="modal-box">
             <h3 id="payModalTitle" style="border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-top: 0; color: #2c3e50;">पेमेंट नोंदवा</h3>
-            <input type="hidden" id="payModalType">
-            <input type="hidden" id="payModalId">
-            <input type="hidden" id="payModalName">
-            
-            <label style="font-weight: bold; font-size: 14px;">रक्कम (₹):</label>
+            <input type="hidden" id="payModalType"><input type="hidden" id="payModalId"><input type="hidden" id="payModalName">
+            <label style="font-weight: bold; font-size: 14px;" id="payModalAmtLabel">रक्कम (₹):</label>
             <input type="number" id="payModalAmount" placeholder="रक्कम टाका" style="width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 2px solid #bdc3c7; border-radius: 5px; font-size: 18px; font-weight: bold; box-sizing: border-box;">
-            
             <label style="font-weight: bold; font-size: 14px;">पेमेंट मोड:</label>
-            <select id="payModalMode" onchange="toggleModalUtr()" style="width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 2px solid #3498db; border-radius: 5px; font-size: 16px; font-weight: bold; box-sizing: border-box;">
-                <option value="Cash">💵 रोख (Cash)</option>
-                <option value="UPI">📱 बँकेतून / UPI</option>
-            </select>
-            
+            <select id="payModalMode" onchange="toggleModalUtr()" style="width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 2px solid #3498db; border-radius: 5px; font-size: 16px; font-weight: bold; box-sizing: border-box;"><option value="Cash">💵 रोख (Cash)</option><option value="UPI">📱 बँकेतून / UPI</option></select>
             <input type="text" id="payModalUtr" placeholder="UTR किंवा Reference No." style="display: none; width: 100%; padding: 10px; margin-bottom: 15px; border: 2px solid #9b59b6; border-radius: 5px; font-size: 14px; box-sizing: border-box;">
-            
-            <div style="display: flex; gap: 10px;">
-                <button type="button" onclick="closePaymentModal()" style="flex: 1; padding: 12px; background: #95a5a6; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold;">रद्द</button>
-                <button type="button" onclick="confirmPaymentModal()" style="flex: 1; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold;">सेव्ह करा</button>
-            </div>
+            <div style="display: flex; gap: 10px;"><button type="button" onclick="closePaymentModal()" style="flex: 1; padding: 12px; background: #95a5a6; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold;">रद्द</button><button type="button" onclick="confirmPaymentModal()" style="flex: 1; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold;">सेव्ह करा</button></div>
         </div>
     </div>
 
