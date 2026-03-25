@@ -6,13 +6,18 @@
     <title>Medical Shop Ultra-Pro App</title>
     <link rel="stylesheet" href="style.css">
     <style>
+        /* 🔴 UI Fix: Content overlapping under bottom nav and Scrolling issue */
+        body { padding-bottom: 80px !important; }
+        
         .input-group { display: flex !important; flex-direction: row !important; gap: 8px !important; margin-bottom: 10px !important; width: 100% !important; align-items: center !important; }
         .input-group input { flex: 1 !important; min-width: 0 !important; width: 100% !important; margin-bottom: 0 !important; padding: 12px !important; font-size: 16px !important; border: 2px solid #3498db !important; border-radius: 5px !important; }
         .mic-btn { width: 50px !important; height: 50px !important; flex-shrink: 0 !important; background-color: #e8f8f5 !important; border: 2px solid #1abc9c !important; border-radius: 8px !important; font-size: 22px !important; display: flex !important; align-items: center !important; justify-content: center !important; cursor: pointer !important; margin: 0 !important; padding: 0 !important; }
         .mic-btn:active { background-color: #1abc9c !important; color: white !important; }
+        
         #qr-reader, #qr-reader-purchase { border: 2px solid #ff9800 !important; border-radius: 8px !important; padding: 10px !important; background: #fff !important; }
         #qr-reader button, #qr-reader-purchase button { background-color: #3498db !important; color: white !important; border: none !important; padding: 10px 15px !important; border-radius: 5px !important; font-weight: bold !important; margin: 5px 2px !important; cursor: pointer !important; font-size: 14px !important; }
         #qr-reader select, #qr-reader-purchase select { padding: 8px !important; border: 2px solid #bdc3c7 !important; border-radius: 5px !important; width: 100% !important; margin-bottom: 10px !important; background-color: #f8f9fa !important; font-size: 14px !important; font-weight: bold !important; }
+        
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 10005; padding: 10px; }
         .modal-box { background: #fff; padding: 20px; border-radius: 10px; width: 100%; max-width: 350px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         .edit-btn { background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; margin-right: 5px; }
@@ -48,22 +53,37 @@
 
     <div id="homeTab" class="tab-content">
         <div class="section-box" style="background-color: #fdfefe;" id="dashboardOverview">
-            <h2 style="color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #1abc9c;">📊 आजचा हिशोब (Today)</h2>
+            <h2 style="color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #1abc9c; padding-bottom: 5px;">📊 आजचा हिशोब (Today)</h2>
             <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
                 <div style="flex: 1; min-width: 90px; padding: 10px; background: #e8f5e9; border-radius: 8px; text-align: center; border: 1px solid #81c784;"><h3 style="margin: 0; font-size: 13px;">आजची विक्री</h3><h2 id="dashTodaySales" style="color: #2e7d32; margin: 5px 0 0 0; font-size: 20px;">₹0</h2></div>
                 <div style="flex: 1; min-width: 90px; padding: 10px; background: #ffe0b2; border-radius: 8px; text-align: center; border: 1px solid #ffb74d;"><h3 style="margin: 0; font-size: 13px;">आजचा खर्च</h3><h2 id="dashTodayExpense" style="color: #e65100; margin: 5px 0 0 0; font-size: 20px;">₹0</h2></div>
                 <div style="flex: 1; min-width: 90px; padding: 10px; background: #e1bee7; border-radius: 8px; text-align: center; border: 1px solid #4db6ac;"><h3 style="margin: 0; font-size: 13px;">आजचा नफा</h3><h2 id="dashNetProfit" style="color: #00695c; margin: 5px 0 0 0; font-size: 20px;">₹0</h2></div>
             </div>
+            <h2 style="color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #9b59b6; padding-bottom: 5px;">📈 एकूण हिशोब (Life-Time)</h2>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 90px; padding: 10px; background: #e3f2fd; border-radius: 8px; text-align: center; border: 1px solid #90caf9;"><h3 style="margin: 0; font-size: 13px;">एकूण विक्री</h3><h2 id="dashLifeSales" style="color: #1565c0; margin: 5px 0 0 0; font-size: 20px;">₹0</h2></div>
+                <div style="flex: 1; min-width: 90px; padding: 10px; background: #ffebee; border-radius: 8px; text-align: center; border: 1px solid #ef9a9a;"><h3 style="margin: 0; font-size: 13px;">एकूण खर्च</h3><h2 id="dashLifeExpense" style="color: #c62828; margin: 5px 0 0 0; font-size: 20px;">₹0</h2></div>
+                <div style="flex: 1; min-width: 90px; padding: 10px; background: #f3e5f5; border-radius: 8px; text-align: center; border: 1px solid #ce93d8;"><h3 style="margin: 0; font-size: 13px;">एकूण खरा नफा</h3><h2 id="dashLifeProfit" style="color: #6a1b9a; margin: 5px 0 0 0; font-size: 20px;">₹0</h2></div>
+            </div>
+            <h2 style="color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #e67e22; padding-bottom: 5px;">📦 साठा व एक्सपायरी</h2>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 90px; padding: 10px; background: #f9ebea; border-radius: 8px; text-align: center; border: 1px solid #d2b4de;"><h3 style="margin: 0; font-size: 13px;">एकूण औषधे</h3><h2 id="dashTotalMeds" style="color: #884ea0; margin: 5px 0 0 0; font-size: 20px;">0</h2></div>
+                <div style="flex: 1; min-width: 90px; padding: 10px; background: #fdedec; border-radius: 8px; text-align: center; border: 1px solid #f5b7b1;"><h3 style="margin: 0; font-size: 13px;">कमी साठा</h3><h2 id="dashLowStock" style="color: #e74c3c; margin: 5px 0 0 0; font-size: 20px;">0</h2></div>
+                <div style="flex: 1; min-width: 90px; padding: 10px; background: #fef5e7; border-radius: 8px; text-align: center; border: 1px solid #fad7a1;"><h3 style="margin: 0; font-size: 13px;">धोका (Expiry)</h3><h2 id="dashExpiry" style="color: #d35400; margin: 5px 0 0 0; font-size: 20px;">0</h2></div>
+            </div>
+            <h2 style="color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #f39c12; padding-bottom: 5px;">🔥 सर्वाधिक विकली जाणारी औषधे</h2>
+            <div style="overflow-x: auto; margin-bottom: 15px;"><table><thead><tr><th>औषधाचे नाव</th><th>विक्री (नग)</th><th>अंदाजे नफा</th></tr></thead><tbody id="topMedsList"></tbody></table></div>
+            <div id="alertMessages" style="color: #d32f2f; font-size: 14px; background-color: #fff; padding: 10px; border-radius: 5px; display: none; border: 1px solid #f5b7b1;"></div>
             <div style="display: flex; gap: 10px; margin-top: 15px;" class="hide-on-print"><button type="button" class="btn-settings" onclick="printDashboard()" style="background-color: #607d8b; flex: 1;">🖨️ रिपोर्ट प्रिंट</button></div>
         </div>
 
         <div class="section-box" style="background-color: #e8f5e9;">
-            <h2>📝 आजची बिले (Cancel Bill)</h2>
+            <h2 style="padding-bottom: 5px;">📝 आजची बिले (Cancel Bill)</h2>
             <div style="overflow-x: auto;"><table><thead><tr><th>ग्राहक / डॉक्टर</th><th>रक्कम</th><th>Action</th></tr></thead><tbody id="todayBillsList"></tbody></table></div>
         </div>
 
         <div class="section-box" style="background-color: #fff3e0;">
-            <h2>💸 दैनंदिन खर्च (Daily Expenses)</h2>
+            <h2 style="padding-bottom: 5px;">💸 दैनंदिन खर्च (Daily Expenses)</h2>
             <form id="expenseForm" onsubmit="return false;">
                 <input type="hidden" id="editExpId">
                 <select id="expCategory" style="width: 100%; padding: 10px; margin-bottom: 10px; border: 2px solid #e67e22; border-radius: 5px; font-weight: bold;">
@@ -93,7 +113,7 @@
 
     <div id="billingTab" class="tab-content">
         <div class="section-box" style="background-color: #e3f2fd;">
-            <h2>🛒 जलद बिलिंग (स्मार्ट विक्री)</h2>
+            <h2 style="padding-bottom: 5px;">🛒 जलद बिलिंग (स्मार्ट विक्री)</h2>
             <form id="billingForm" onsubmit="return false;">
                 <div class="input-group"><input type="text" id="customerName" placeholder="ग्राहकाचे नाव (Customer Name)" required><button type="button" class="mic-btn" onclick="startDictation('customerName')">🎤</button></div>
                 <div class="input-group"><input type="text" id="customerGstin" placeholder="ग्राहकाचा GSTIN (Optional)" style="border: 1px solid #3498db; background-color: #ebf5fb;"><button type="button" class="mic-btn" onclick="startDictation('customerGstin')">🎤</button></div>
@@ -136,32 +156,18 @@
 
     <div id="inventoryTab" class="tab-content">
         <div class="section-box" style="background-color: #fce4ec; border: 1px solid #f48fb1;">
-            <h2>💊 नवीन औषध जोडा (एजन्सी बिलानुसार)</h2>
+            <h2 style="padding-bottom: 5px;">💊 नवीन औषध जोडा (एजन्सी बिलानुसार)</h2>
             <form id="medicineForm" onsubmit="return false;">
                 <input type="hidden" id="editId">
                 <select id="supplierSelect" style="margin-bottom: 10px; font-weight: bold; background: #fff3e0; border: 1px solid #ff9800; width: 100%;"><option value="">-- सप्लायर निवडा (Optional) --</option></select>
                 <div class="input-group"><input type="text" id="medName" placeholder="औषधाचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('medName')">🎤</button></div>
                 
                 <div style="display: flex; gap: 10px; margin-bottom: 10px; background: #e8f5e9; padding: 10px; border: 1px solid #4CAF50; border-radius: 5px;">
-                    <div style="flex: 1;">
-                        <label style="font-size: 11px; font-weight: bold; color: #2e7d32;">HSN Code:</label>
-                        <input type="text" id="hsnCode" placeholder="HSN (Optional)" style="width: 100%; border: 1px solid #ccc; padding: 8px; font-size: 14px;">
-                    </div>
-                    <div style="flex: 1;">
-                        <label style="font-size: 11px; font-weight: bold; color: #2e7d32;">GST %:</label>
-                        <select id="medGstRate" style="width: 100%; border: 1px solid #ccc; padding: 8px; font-size: 14px; font-weight: bold;">
-                            <option value="0">0% GST</option>
-                            <option value="5">5% GST</option>
-                            <option value="12" selected>12% GST</option>
-                            <option value="18">18% GST</option>
-                            <option value="28">28% GST</option>
-                        </select>
-                    </div>
+                    <div style="flex: 1;"><label style="font-size: 11px; font-weight: bold; color: #2e7d32;">HSN Code:</label><input type="text" id="hsnCode" placeholder="HSN (Optional)" style="width: 100%; border: 1px solid #ccc; padding: 8px; font-size: 14px;"></div>
+                    <div style="flex: 1;"><label style="font-size: 11px; font-weight: bold; color: #2e7d32;">GST %:</label><select id="medGstRate" style="width: 100%; border: 1px solid #ccc; padding: 8px; font-size: 14px; font-weight: bold;"><option value="0">0% GST</option><option value="5">5% GST</option><option value="12" selected>12% GST</option><option value="18">18% GST</option><option value="28">28% GST</option></select></div>
                 </div>
 
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <select id="unitType" style="flex: 1; font-weight: bold;" required><option value="गोळी (Tab)">💊 गोळी</option><option value="बाटली (Bottle)">🧴 बाटली</option><option value="इंजेक्शन (Inj)">💉 इंजेक्शन</option><option value="मलम (Tube)">मलम</option></select>
-                </div>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;"><select id="unitType" style="flex: 1; font-weight: bold;" required><option value="गोळी (Tab)">💊 गोळी</option><option value="बाटली (Bottle)">🧴 बाटली</option><option value="इंजेक्शन (Inj)">💉 इंजेक्शन</option><option value="मलम (Tube)">मलम</option></select></div>
                 
                 <div class="input-group"><input type="text" id="saltName" placeholder="घटक / Salt Name"><button type="button" class="mic-btn" onclick="startDictation('saltName')">🎤</button></div>
                 <label style="display: block; margin-top: 5px; background: #fff3e0; padding: 10px; border-radius: 5px; border: 1px solid #ff9800; font-weight: bold; color: #d35400;"><input type="checkbox" id="rxRequired" style="transform: scale(1.2); margin-right: 5px;"> ⚠️ हे प्रतिबंधित (Rx) औषध आहे</label>
@@ -182,8 +188,62 @@
                 <button type="button" class="btn-save" onclick="saveMedicine()">औषध सेव्ह करा</button>
             </form>
         </div>
+        <div class="section-box" style="background-color: #e8f5e9;">
+            <h2 style="padding-bottom: 5px;">📦 एजन्सी बिलानुसार जुना साठा वाढवा</h2>
+            <button type="button" class="btn-settings" onclick="startPurchaseScanner()" style="background-color: #4CAF50; margin-bottom: 10px;">📷 बारकोड स्कॅन करा</button>
+            <div id="qr-reader-purchase" style="width: 100%; display: none; margin-bottom: 10px;"></div>
+            <select id="purchaseMedicineSelect"><option value="">-- यादीतून औषध निवडा --</option></select>
+            <div style="display: flex; gap: 10px; margin-top: 10px;"><input type="number" id="purchasePackQty" placeholder="QTY" min="1" style="flex: 1;"><input type="number" id="purchaseFreeQty" placeholder="FREE" value="0" min="0" style="flex: 1;"></div>
+            <button type="button" class="btn-save" onclick="updateStockQty()" style="margin-top: 10px; width: 100%;">साठा वाढवा (+)</button>
         </div>
-    
+        <div class="section-box">
+            <h2 style="padding-bottom: 5px;">📦 उपलब्ध औषधे (Inventory)</h2>
+            <div class="input-group"><input type="text" id="searchInput" onkeyup="searchMedicine()" placeholder="🔍 नाव किंवा बारकोड शोधा..."><button type="button" class="mic-btn" onclick="startDictation('searchInput')">🎤</button></div>
+            <button type="button" class="btn-refresh" onclick="displayMedicines()">रिफ्रेश करा</button>
+            <div style="overflow-x: auto;"><table><thead><tr><th>नाव व घटक (HSN)</th><th>एकूण साठा</th><th>१ नग खरेदी/MRP</th><th>Action</th></tr></thead><tbody id="medicineList"></tbody></table></div>
+        </div>
+    </div>
+
+    <div id="ledgerTab" class="tab-content">
+        <div class="section-box" style="background-color: #e3f2fd;" id="bankSectionBox">
+            <h2 style="padding-bottom: 5px;">🏦 बँक व रोख (Bank Tracker)</h2>
+            <h3 style="color: #1565c0; margin-top: 0;">बँक बॅलन्स: <span id="bankBalanceDisplay" style="font-size: 22px;">₹0.00</span></h3>
+            <form id="bankForm" onsubmit="return false;">
+                <input type="hidden" id="editBankId">
+                <div class="input-group"><input type="text" id="bankDesc" placeholder="व्यवहाराचे कारण (उदा. कॅश भरली)" required><button type="button" class="mic-btn" onclick="startDictation('bankDesc')">🎤</button></div>
+                <div style="display: flex; gap: 10px;"><select id="bankType" style="flex: 1; padding: 10px; font-weight:bold; border: 1px solid #1565c0; border-radius:5px;"><option value="IN">बँकेत जमा (IN +)</option><option value="OUT">बँकेतून नावे (OUT -)</option></select><input type="number" id="bankAmount" placeholder="रक्कम (₹)" required style="flex: 1;"></div>
+                <button type="button" class="btn-settings" onclick="saveBankTransaction()" style="background-color: #1565c0; margin-top:10px;">बँक एन्ट्री सेव्ह करा</button>
+            </form>
+            <div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>तारीख व कारण</th><th style="color: green;">जमा (IN)</th><th style="color: red;">नावे (OUT)</th><th>Action</th></tr></thead><tbody id="bankList"></tbody></table></div>
+        </div>
+
+        <div class="section-box" style="background-color: #e0f2f1;" id="staffSectionBox"><h2 style="padding-bottom: 5px;">👨‍💼 कर्मचारी खातेवही</h2>
+        <form id="staffForm" onsubmit="return false;">
+            <input type="hidden" id="editStaffId">
+            <div class="input-group"><input type="text" id="staffName" placeholder="कर्मचाऱ्याचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('staffName')">🎤</button></div><div style="display: flex; gap: 10px;"><input type="number" id="staffSalary" placeholder="महिना पगार (₹)" style="flex: 1;"><input type="number" id="staffAdvance" placeholder="सध्याची उचल (₹)" value="0" style="flex: 1;"></div><button type="button" class="btn-settings" onclick="saveStaff()" style="background-color: #00897b;">कर्मचारी सेव्ह करा</button>
+        </form>
+        <div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>कर्मचारी</th><th>उचल (₹)</th><th>Action</th></tr></thead><tbody id="staffList"></tbody></table></div></div>
+        
+        <div class="section-box" style="background-color: #fce4ec;"><h2 style="padding-bottom: 5px;">📓 ग्राहक उधारी व जमा</h2>
+        <form id="customerForm" onsubmit="return false;">
+            <input type="hidden" id="editCustId">
+            <div class="input-group"><input type="text" id="custName" placeholder="ग्राहकाचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('custName')">🎤</button></div><input type="text" id="custPhone" placeholder="मोबाईल नंबर" style="margin-bottom:10px;"><input type="number" id="custBalance" placeholder="सुरुवातीची बाकी (₹)" value="0" style="margin-bottom:10px;"><button type="button" class="btn-ledger" onclick="saveCustomer()">ग्राहक सेव्ह करा</button>
+        </form>
+        <div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>ग्राहक</th><th>बाकी/जमा (₹)</th><th>Action</th></tr></thead><tbody id="customerList"></tbody></table></div></div>
+        
+        <div class="section-box" style="background-color: #f3e5f5;" id="supplierSectionBox"><h2 style="padding-bottom: 5px;">🚚 सप्लायर देय</h2>
+        <form id="supplierForm" onsubmit="return false;">
+            <input type="hidden" id="editSuppId">
+            <div class="input-group"><input type="text" id="suppName" placeholder="होलसेलरचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('suppName')">🎤</button></div><input type="text" id="suppPhone" placeholder="मोबाईल नंबर" style="margin-bottom:10px;"><input type="number" id="suppBalance" placeholder="सुरुवातीचे देय (₹)" value="0" style="margin-bottom:10px;"><button type="button" class="btn-settings" onclick="saveSupplier()" style="background-color: #8e24aa;">सप्लायर सेव्ह करा</button>
+        </form>
+        <div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>एजन्सी</th><th style="color: #d32f2f;">देय (₹)</th><th>Action</th></tr></thead><tbody id="supplierList"></tbody></table></div></div>
+    </div>
+
+    <div id="settingsTab" class="tab-content">
+        <div class="section-box" style="background-color: #e8eaf6;"><h2 style="padding-bottom: 5px;">⚙️ दुकानाची माहिती व सिक्युरिटी</h2><form id="shopSettingsForm" onsubmit="return false;"><input type="text" id="shopNameInput" placeholder="दुकानाचे नाव"><input type="text" id="shopAddressInput" placeholder="दुकानाचा पत्ता"><input type="text" id="shopPhoneInput" placeholder="मोबाईल नंबर"><input type="text" id="shopGstinInput" placeholder="दुकानाचा GSTIN नंबर (Optional)" style="border: 2px solid #9c27b0; font-weight: bold; background: #f3e5f5; text-transform: uppercase;"><label style="margin-top: 15px; display: block; font-weight: bold; color: #d32f2f;">🔒 मालक पिन (Owner PIN):</label><input type="password" id="shopPinInput" placeholder="मालक पिन (उदा. 1234)"><label style="margin-top: 5px; display: block; font-weight: bold; color: #1976d2;">🧑‍💼 कर्मचारी पिन (Staff PIN):</label><input type="password" id="staffPinInput" placeholder="कर्मचारी पिन (उदा. 0000)"><button type="button" class="btn-settings" onclick="saveShopSettings()">माहिती सेव्ह करा</button></form></div>
+        <div class="section-box" style="background-color: #e0f7fa;"><h2 style="padding-bottom: 5px;">💾 डेटा बॅकअप आणि रिपोर्ट</h2><button type="button" class="btn-cart" style="background-color: #00897b;" onclick="exportData()">⬇️ डेटा बॅकअप डाउनलोड करा</button><hr style="margin: 20px 0; border-top: 1px solid #b2ebf2;"><input type="file" id="backupFile" accept=".json" style="background: white; border: 1px solid #00897b;"><button type="button" class="btn-ledger" style="background-color: #d32f2f;" onclick="importData()">⬆️ डेटा रिस्टोअर करा</button><button type="button" class="btn-settings" style="background-color: #1565c0; margin-top: 15px;" onclick="exportCAExcel()">📊 CA ऑडिट रिपोर्ट (Excel / CSV)</button></div>
+    </div>
+
     <div id="invoiceSection" class="pos-receipt" style="display: none;">
         <div class="pos-header">
             <h2 id="invShopName">🩺 मेडिकल शॉप</h2>
@@ -200,30 +260,36 @@
             <p style="margin: 3px 0; display: flex; justify-content: space-between;"><span><b>Mode:</b> <span id="invPayMode"></span></span><span id="invUtrWrapper" style="display:none;"><b>UTR:</b> <span id="invUtrNo"></span></span></p>
             <p><b id="billTypeLabel" style="display: none;">(CREDIT BILL)</b></p>
         </div>
-        
-        <table class="pos-table">
-            <thead><tr><th style="width: 15%;">Qty</th><th style="width: 40%;">Item</th><th style="width: 15%;">Batch</th><th style="width: 15%;">HSN</th><th style="width: 15%; text-align: right;">Amt</th></tr></thead>
-            <tbody id="invoiceBody"></tbody>
-        </table>
-
+        <table class="pos-table"><thead><tr><th style="width: 15%;">Qty</th><th style="width: 40%;">Item</th><th style="width: 15%;">Batch</th><th style="width: 15%;">HSN</th><th style="width: 15%; text-align: right;">Amt</th></tr></thead><tbody id="invoiceBody"></tbody></table>
         <div class="pos-total-section">
             <div class="pos-total-row"><span>Taxable Value:</span> <span id="invTaxableVal"></span></div>
             <div id="invDiscountRow" class="pos-total-row" style="display: none; color: #555;"><span>Discount:</span> <span id="invDiscountAmt"></span></div>
         </div>
-        
-        <table class="pos-gst-table" id="invGstTable" style="display: none;">
-            <thead><tr><th>GST%</th><th>Taxable</th><th>CGST</th><th>SGST</th></tr></thead>
-            <tbody id="invGstBody"></tbody>
-        </table>
-
+        <table class="pos-gst-table" id="invGstTable" style="display: none;"><thead><tr><th>GST%</th><th>Taxable</th><th>CGST</th><th>SGST</th></tr></thead><tbody id="invGstBody"></tbody></table>
         <div class="pos-final-total">Net Payable : <span id="invTotal"></span></div>
-        
-        <div class="pos-footer">
-            <p style="text-align: left; margin: 2px 0;">E & O.E. Subject to Local Jurisdiction.</p>
-            <p style="text-align: left; margin: 2px 0;">* I/We declare that this invoice shows actual price of the goods and all particulars are true and correct.</p><br><br>
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px;"><span style="border-top: 1px solid #000; padding-top: 2px;">Pharmacist</span><div style="text-align: right;"><span style="font-size: 10px;">For <span id="invFooterShopName"></span></span><br><br><span style="border-top: 1px solid #000; padding-top: 2px;">Signature</span></div></div>
-        </div>
+        <div class="pos-footer"><p style="text-align: left; margin: 2px 0;">E & O.E. Subject to Local Jurisdiction.</p><p style="text-align: left; margin: 2px 0;">* I/We declare that this invoice shows actual price of the goods and all particulars are true and correct.</p><br><br><div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px;"><span style="border-top: 1px solid #000; padding-top: 2px;">Pharmacist</span><div style="text-align: right;"><span style="font-size: 10px;">For <span id="invFooterShopName"></span></span><br><br><span style="border-top: 1px solid #000; padding-top: 2px;">Signature</span></div></div></div>
         <div class="hide-on-print" style="margin-top: 20px; text-align: center;"><button type="button" class="btn-save" onclick="printInvoice()" style="width: 100%; margin-bottom: 10px;">🖨️ पावती प्रिंट करा</button></div>
+    </div>
+
+    <div id="paymentModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="payModalTitle" style="border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-top: 0; color: #2c3e50;">पेमेंट नोंदवा</h3>
+            <input type="hidden" id="payModalType"><input type="hidden" id="payModalId"><input type="hidden" id="payModalName">
+            <label style="font-weight: bold; font-size: 14px;" id="payModalAmtLabel">रक्कम (₹):</label>
+            <input type="number" id="payModalAmount" placeholder="रक्कम टाका" style="width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 2px solid #bdc3c7; border-radius: 5px; font-size: 18px; font-weight: bold; box-sizing: border-box;">
+            <label style="font-weight: bold; font-size: 14px;">पेमेंट मोड:</label>
+            <select id="payModalMode" onchange="toggleModalUtr()" style="width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 2px solid #3498db; border-radius: 5px; font-size: 16px; font-weight: bold; box-sizing: border-box;"><option value="Cash">💵 रोख (Cash)</option><option value="UPI">📱 बँकेतून / UPI</option></select>
+            <input type="text" id="payModalUtr" placeholder="UTR किंवा Reference No." style="display: none; width: 100%; padding: 10px; margin-bottom: 15px; border: 2px solid #9b59b6; border-radius: 5px; font-size: 14px; box-sizing: border-box;">
+            <div style="display: flex; gap: 10px;"><button type="button" onclick="closePaymentModal()" style="flex: 1; padding: 12px; background: #95a5a6; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold;">रद्द</button><button type="button" onclick="confirmPaymentModal()" style="flex: 1; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold;">सेव्ह करा</button></div>
+        </div>
+    </div>
+
+    <div class="bottom-nav hide-on-print">
+        <button id="navHome" onclick="showTab('homeTab', this)"><span class="icon">🏠</span><br>होम</button>
+        <button id="navBilling" onclick="showTab('billingTab', this)"><span class="icon">🛒</span><br>बिल</button>
+        <button id="navInventory" onclick="showTab('inventoryTab', this)"><span class="icon">📦</span><br>साठा</button>
+        <button id="navLedger" onclick="showTab('ledgerTab', this)"><span class="icon">📓</span><br>खातेवही</button>
+        <button id="navSettings" onclick="showTab('settingsTab', this)"><span class="icon">⚙️</span><br>सेटिंग</button>
     </div>
 
     <script src="scanner.js"></script>
