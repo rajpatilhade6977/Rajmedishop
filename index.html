@@ -16,6 +16,8 @@
         #qr-reader select, #qr-reader-purchase select { padding: 8px !important; border: 2px solid #bdc3c7 !important; border-radius: 5px !important; width: 100% !important; margin-bottom: 10px !important; background-color: #f8f9fa !important; font-size: 14px !important; font-weight: bold !important; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 10005; padding: 10px; }
         .modal-box { background: #fff; padding: 20px; border-radius: 10px; width: 100%; max-width: 350px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .edit-btn { background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; margin-right: 5px; }
+        .edit-btn:active { background-color: #2980b9; }
         @media print { body * { visibility: hidden; } #invoiceSection, #invoiceSection * { visibility: visible; } #invoiceSection { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; border: none; font-family: 'Courier New', Courier, monospace !important; } .hide-on-print { display: none !important; } }
         .pos-receipt { max-width: 380px; margin: 0 auto; font-family: 'Courier New', Courier, monospace; font-size: 13px; color: #000; background: #fff; padding: 15px; border: 1px dashed #555; }
         .pos-header { text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
@@ -47,7 +49,10 @@
         <p id="pinError" style="color: #e74c3c; display: none; margin-top: 15px; font-weight: bold;">❌ चुकीचा पिन! पुन्हा प्रयत्न करा.</p>
     </div>
 
-    <h1>मेडिकल शॉप ॲप</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: #2c3e50; color: white; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h1 style="margin: 0; font-size: 22px;">⚕️ मेडिकल शॉप ॲप</h1>
+        <button onclick="logoutApp()" style="background-color: #e74c3c; border: none; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🚪 लॉगआउट</button>
+    </div>
     <div id="message"></div>
 
     <div id="homeTab" class="tab-content">
@@ -84,7 +89,7 @@
         <div class="section-box" style="background-color: #fff3e0;">
             <h2>💸 दैनंदिन खर्च (Daily Expenses)</h2>
             <form id="expenseForm" onsubmit="return false;">
-                <div class="input-group">
+                <input type="hidden" id="editExpId"> <div class="input-group">
                     <input type="text" id="expDesc" placeholder="खर्चाचे कारण (उदा. चहा)" required>
                     <button type="button" class="mic-btn" onclick="startDictation('expDesc')">🎤</button>
                 </div>
@@ -96,7 +101,7 @@
                     </select>
                     <input type="text" id="expUtrNo" placeholder="Paste UTR No." style="flex: 1.5; display: none; margin: 0; border: 1px solid #3498db; padding: 8px; font-size: 14px; border-radius: 5px;">
                 </div>
-                <button type="button" class="btn-settings" onclick="saveExpense()" style="background-color: #ff9800; width: 100%; font-size: 16px;">खर्च नोंदवा</button>
+                <button type="button" class="btn-settings" onclick="saveExpense()" style="background-color: #ff9800; width: 100%; font-size: 16px;">खर्च सेव्ह करा</button>
             </form>
             <h3 style="margin-top: 15px;">📅 आजचा खर्च</h3>
             <div style="overflow-x: auto;"><table><thead><tr><th>कारण</th><th style="color: #d32f2f;">रक्कम</th><th>Action</th></tr></thead><tbody id="expenseList"></tbody></table></div>
@@ -115,6 +120,10 @@
                 <div id="qr-reader" style="width: 100%; display: none; margin-bottom: 10px;"></div>
                 
                 <select id="medicineSelect" onchange="updatePrice()"><option value="">-- औषध निवडा --</option></select>
+                
+                <div id="rackDisplay" style="display: none; background: #fef5e7; padding: 10px; border-radius: 5px; margin-bottom: 10px; border: 1px solid #f39c12; color: #d35400; font-size: 16px;">
+                    <b>📍 लोकेशन: </b> <span id="rackNumberTxt" style="font-weight: bold; font-size: 18px;"></span>
+                </div>
                 
                 <div style="display: flex; gap: 10px; background: #fff; padding: 10px; border-radius: 5px; border: 1px solid #90caf9;">
                     <select id="sellType" onchange="updatePrice()" style="flex: 1; font-weight: bold; background: #e8eaf6; margin: 0;"><option value="single">सुटे नग/गोळी</option><option value="pack">पूर्ण स्ट्रीप/पॅक</option></select>
@@ -155,8 +164,7 @@
         <div class="section-box" style="background-color: #fce4ec; border: 1px solid #f48fb1;">
             <h2>💊 नवीन औषध जोडा (एजन्सी बिलानुसार)</h2>
             <form id="medicineForm" onsubmit="return false;">
-                <input type="hidden" id="editId">
-                <select id="supplierSelect" style="margin-bottom: 10px; font-weight: bold; background: #fff3e0; border: 1px solid #ff9800; width: 100%;"><option value="">-- सप्लायर निवडा (Optional) --</option></select>
+                <input type="hidden" id="editId"> <select id="supplierSelect" style="margin-bottom: 10px; font-weight: bold; background: #fff3e0; border: 1px solid #ff9800; width: 100%;"><option value="">-- सप्लायर निवडा (Optional) --</option></select>
                 <div class="input-group"><input type="text" id="medName" placeholder="औषधाचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('medName')">🎤</button></div>
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <input type="text" id="hsnCode" placeholder="HSN कोड" style="flex: 1; border: 1px solid #e91e63;">
@@ -220,16 +228,30 @@
             <h2>🏦 बँक व रोख (Bank Tracker)</h2>
             <h3 style="color: #1565c0; margin-top: 0;">बँक बॅलन्स: <span id="bankBalanceDisplay" style="font-size: 22px;">₹0.00</span></h3>
             <form id="bankForm" onsubmit="return false;">
-                <div class="input-group"><input type="text" id="bankDesc" placeholder="व्यवहाराचे कारण (उदा. कॅश भरली)" required><button type="button" class="mic-btn" onclick="startDictation('bankDesc')">🎤</button></div>
+                <input type="hidden" id="editBankId"> <div class="input-group"><input type="text" id="bankDesc" placeholder="व्यवहाराचे कारण (उदा. कॅश भरली)" required><button type="button" class="mic-btn" onclick="startDictation('bankDesc')">🎤</button></div>
                 <div style="display: flex; gap: 10px;"><select id="bankType" style="flex: 1; padding: 10px; font-weight:bold; border: 1px solid #1565c0; border-radius:5px;"><option value="IN">बँकेत जमा (IN +)</option><option value="OUT">बँकेतून नावे (OUT -)</option></select><input type="number" id="bankAmount" placeholder="रक्कम (₹)" required style="flex: 1;"></div>
                 <button type="button" class="btn-settings" onclick="saveBankTransaction()" style="background-color: #1565c0; margin-top:10px;">बँक एन्ट्री सेव्ह करा</button>
             </form>
-            <div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>तारीख व कारण</th><th style="color: green;">जमा (IN)</th><th style="color: red;">नावे (OUT)</th></tr></thead><tbody id="bankList"></tbody></table></div>
+            <div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>तारीख व कारण</th><th style="color: green;">जमा (IN)</th><th style="color: red;">नावे (OUT)</th><th>Action</th></tr></thead><tbody id="bankList"></tbody></table></div>
         </div>
 
-        <div class="section-box" style="background-color: #e0f2f1;" id="staffSectionBox"><h2>👨‍💼 कर्मचारी खातेवही</h2><form id="staffForm" onsubmit="return false;"><div class="input-group"><input type="text" id="staffName" placeholder="कर्मचाऱ्याचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('staffName')">🎤</button></div><div style="display: flex; gap: 10px;"><input type="number" id="staffSalary" placeholder="महिना पगार (₹)" style="flex: 1;"><input type="number" id="staffAdvance" placeholder="सध्याची उचल (₹)" value="0" style="flex: 1;"></div><button type="button" class="btn-settings" onclick="saveStaff()" style="background-color: #00897b;">कर्मचारी जोडा</button></form><div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>कर्मचारी</th><th>उचल (₹)</th><th>Action</th></tr></thead><tbody id="staffList"></tbody></table></div></div>
-        <div class="section-box" style="background-color: #fce4ec;"><h2>📓 ग्राहक उधारी व जमा</h2><form id="customerForm" onsubmit="return false;"><div class="input-group"><input type="text" id="custName" placeholder="ग्राहकाचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('custName')">🎤</button></div><input type="text" id="custPhone" placeholder="मोबाईल नंबर" style="margin-bottom:10px;"><input type="number" id="custBalance" placeholder="सुरुवातीची बाकी (₹)" value="0" style="margin-bottom:10px;"><button type="button" class="btn-ledger" onclick="saveCustomer()">नवीन ग्राहक जोडा</button></form><div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>ग्राहक</th><th>बाकी/जमा (₹)</th><th>Action</th></tr></thead><tbody id="customerList"></tbody></table></div></div>
-        <div class="section-box" style="background-color: #f3e5f5;" id="supplierSectionBox"><h2>🚚 सप्लायर देय</h2><form id="supplierForm" onsubmit="return false;"><div class="input-group"><input type="text" id="suppName" placeholder="होलसेलरचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('suppName')">🎤</button></div><input type="text" id="suppPhone" placeholder="मोबाईल नंबर" style="margin-bottom:10px;"><input type="number" id="suppBalance" placeholder="सुरुवातीचे देय (₹)" value="0" style="margin-bottom:10px;"><button type="button" class="btn-settings" onclick="saveSupplier()" style="background-color: #8e24aa;">नवीन सप्लायर जोडा</button></form><div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>एजन्सी</th><th style="color: #d32f2f;">देय (₹)</th><th>Action</th></tr></thead><tbody id="supplierList"></tbody></table></div></div>
+        <div class="section-box" style="background-color: #e0f2f1;" id="staffSectionBox"><h2>👨‍💼 कर्मचारी खातेवही</h2>
+        <form id="staffForm" onsubmit="return false;">
+            <input type="hidden" id="editStaffId"> <div class="input-group"><input type="text" id="staffName" placeholder="कर्मचाऱ्याचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('staffName')">🎤</button></div><div style="display: flex; gap: 10px;"><input type="number" id="staffSalary" placeholder="महिना पगार (₹)" style="flex: 1;"><input type="number" id="staffAdvance" placeholder="सध्याची उचल (₹)" value="0" style="flex: 1;"></div><button type="button" class="btn-settings" onclick="saveStaff()" style="background-color: #00897b;">कर्मचारी सेव्ह करा</button>
+        </form>
+        <div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>कर्मचारी</th><th>उचल (₹)</th><th>Action</th></tr></thead><tbody id="staffList"></tbody></table></div></div>
+        
+        <div class="section-box" style="background-color: #fce4ec;"><h2>📓 ग्राहक उधारी व जमा</h2>
+        <form id="customerForm" onsubmit="return false;">
+            <input type="hidden" id="editCustId"> <div class="input-group"><input type="text" id="custName" placeholder="ग्राहकाचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('custName')">🎤</button></div><input type="text" id="custPhone" placeholder="मोबाईल नंबर" style="margin-bottom:10px;"><input type="number" id="custBalance" placeholder="सुरुवातीची बाकी (₹)" value="0" style="margin-bottom:10px;"><button type="button" class="btn-ledger" onclick="saveCustomer()">ग्राहक सेव्ह करा</button>
+        </form>
+        <div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>ग्राहक</th><th>बाकी/जमा (₹)</th><th>Action</th></tr></thead><tbody id="customerList"></tbody></table></div></div>
+        
+        <div class="section-box" style="background-color: #f3e5f5;" id="supplierSectionBox"><h2>🚚 सप्लायर देय</h2>
+        <form id="supplierForm" onsubmit="return false;">
+            <input type="hidden" id="editSuppId"> <div class="input-group"><input type="text" id="suppName" placeholder="होलसेलरचे नाव" required><button type="button" class="mic-btn" onclick="startDictation('suppName')">🎤</button></div><input type="text" id="suppPhone" placeholder="मोबाईल नंबर" style="margin-bottom:10px;"><input type="number" id="suppBalance" placeholder="सुरुवातीचे देय (₹)" value="0" style="margin-bottom:10px;"><button type="button" class="btn-settings" onclick="saveSupplier()" style="background-color: #8e24aa;">सप्लायर सेव्ह करा</button>
+        </form>
+        <div style="overflow-x: auto; margin-top: 15px;"><table><thead><tr><th>एजन्सी</th><th style="color: #d32f2f;">देय (₹)</th><th>Action</th></tr></thead><tbody id="supplierList"></tbody></table></div></div>
     </div>
 
     <div id="settingsTab" class="tab-content">
