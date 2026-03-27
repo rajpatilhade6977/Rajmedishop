@@ -48,7 +48,6 @@ function startDictation(targetId) {
 function getTodayDateStr() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
 function addDays(dateStr, days) { var result = new Date(dateStr); result.setDate(result.getDate() + parseInt(days)); return result.getFullYear() + '-' + ('0' + (result.getMonth() + 1)).slice(-2) + '-' + ('0' + result.getDate()).slice(-2); }
 
-// 💡 Security Fix 3: Strict HTML Sanitizer (XSS Prevention)
 function cleanText(str) { 
     return str ? str.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;").trim() : ""; 
 }
@@ -78,9 +77,6 @@ async function hashPin(pin){
     return btoa(pin); 
 }
 
-// ==========================================
-// 🔥 Firewall & DB Logic
-// ==========================================
 if(!localStorage.getItem('Medicines')) localStorage.setItem('Medicines', '[]'); if(!localStorage.getItem('Sales')) localStorage.setItem('Sales', '[]'); if(!localStorage.getItem('Customers')) localStorage.setItem('Customers', '[]'); if(!localStorage.getItem('Suppliers')) localStorage.setItem('Suppliers', '[]'); if(!localStorage.getItem('Expenses')) localStorage.setItem('Expenses', '[]'); if(!localStorage.getItem('Staff')) localStorage.setItem('Staff', '[]'); if(!localStorage.getItem('BankTransactions')) localStorage.setItem('BankTransactions', '[]'); 
 if(!localStorage.getItem('lastInvoiceNo')) localStorage.setItem('lastInvoiceNo', '0'); 
 
@@ -304,7 +300,6 @@ function deleteExpense(id) { var expenses = getDB('Expenses'); var idx = expense
 
 function loadSupplierDropdown() { var select = document.getElementById('supplierSelect'); if(!select) return; select.innerHTML = "<option value=''>-- सप्लायर निवडा (Optional) --</option>"; getDB('Suppliers').forEach(s => { select.innerHTML += `<option value='${s.supplier_id}'>${cleanText(s.name)}</option>`; }); }
 
-// 💡 Security Fix 2: Medicine DB Entry Leak Fix (Transaction Rollback for Inventory)
 function saveMedicine() {
     if(isProcessing) return;
     try {
@@ -464,10 +459,36 @@ function updatePurchaseCartUI() {
 }
 function removePurchaseCartItem(index) { purchaseCart.splice(index, 1); updatePurchaseCartUI(); }
 
+// 📥 Excel/CSV Import
+function downloadCSVTemplate() { var csvContent = "Medicine Name,Pack Qty,Free Qty,PTR,MRP\nParacetamol 500mg,10,2,15.50,20.00\n"; var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); var link = document.createElement("a"); var url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", "Purchase_Bill_Template.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+function handleCSVUpload(event) { var file = event.target.files[0]; if (!file) return; var reader = new FileReader(); reader.onload = function(e) { var text = e.target.result; processCSVData(text); document.getElementById('csvFileInput').value = ""; }; reader.readAsText(file); }
+function processCSVData(csvText) {
+    if(isProcessing) return; isProcessing = true;
+    try {
+        function splitCSV(str) { var result = []; var cur = ''; var inQuotes = false; for (var i = 0; i < str.length; i++) { var char = str[i]; if (char === '"') { inQuotes = !inQuotes; } else if (char === ',' && !inQuotes) { result.push(cur.trim().replace(/^"|"$/g, '')); cur = ''; } else { cur += char; } } result.push(cur.trim().replace(/^"|"$/g, '')); return result; }
+        var lines = csvText.split(/\r\n|\n/); if (lines.length < 2) { alert("⚠️ फाईल रिकामी आहे किंवा चुकीच्या फॉरमॅटमध्ये आहे!"); return; }
+        var medsDB = getDB('Medicines'); var addedCount = 0; var notFoundMeds = [];
+        for (var i = 1; i < lines.length; i++) {
+            var line = lines[i].trim(); if (!line) continue; var cols = splitCSV(line); if (cols.length < 5) continue; 
+            var medName = cleanText(cols[0]); var packQty = parseInt(cols[1]) || 0; var freeQty = parseInt(cols[2]) || 0; var ptr = parseFloat(cols[3]) || 0; var mrp = parseFloat(cols[4]) || 0;
+            if(packQty <= 0 || ptr < 0 || mrp < 0 || freeQty < 0) continue;
+            var existingMed = medsDB.find(m => m.name.toLowerCase() === medName.toLowerCase());
+            if (existingMed) {
+                var total = parseFloat((packQty * ptr).toFixed(2)); var existingCartItem = purchaseCart.find(item => item.id === existingMed.medicine_id);
+                if (existingCartItem) { existingCartItem.packQty += packQty; existingCartItem.freeQty += freeQty; existingCartItem.total = parseFloat((existingCartItem.total + total).toFixed(2)); existingCartItem.ptr = ptr; existingCartItem.mrp = mrp; } 
+                else { purchaseCart.push({ id: existingMed.medicine_id, name: existingMed.name, packQty: packQty, freeQty: freeQty, ptr: ptr, mrp: mrp, total: total }); }
+                addedCount++;
+            } else { if(medName !== "") notFoundMeds.push(medName); }
+        }
+        updatePurchaseCartUI();
+        if (notFoundMeds.length > 0) { alert(`✅ ${addedCount} औषधे यशस्वीरीत्या जोडली गेली.\n\n⚠️ खालील औषधे सिस्टीममध्ये सापडली नाहीत (कृपया आधी त्यांना 'साठा' विभागात जोडा, स्पेलिंग तपासा):\n\n` + notFoundMeds.join('\n')); } 
+        else { if(addedCount > 0) showMessage(`✅ सर्व ${addedCount} औषधे यशस्वीरीत्या बिलात भरली!`, "green"); else alert("⚠️ फाईलमध्ये कोणतीही योग्य माहिती सापडली नाही."); }
+    } catch(e) { alert("❌ फाईल वाचताना तांत्रिक चूक झाली! फाईल .csv फॉरमॅटमध्येच असल्याची खात्री करा."); } finally { isProcessing = false; }
+}
+
 function savePurchaseBill() {
     if(purchaseCart.length === 0) { alert("⚠️ खरेदी कार्टमध्ये कोणतीही औषधे नाहीत!"); return; }
     if(isProcessing) return;
-    
     try {
         isProcessing = true;
         var sEl = document.getElementById('purchaseSupplier'); var suppId = sEl ? sEl.value : "";
@@ -476,22 +497,10 @@ function savePurchaseBill() {
         var dEl = document.getElementById('purchaseDate'); var billDate = dEl ? dEl.value || getTodayDateStr() : getTodayDateStr();
         var cEl = document.getElementById('purchaseCreditDays'); var creditDays = cEl ? parseInt(cEl.value) || 0 : 0;
         
-        var meds = getDB('Medicines');
-        var supps = getDB('Suppliers');
+        var meds = getDB('Medicines'); var supps = getDB('Suppliers');
+        if(suppId) { var sIdx = supps.findIndex(s => s.supplier_id == suppId); if(sIdx > -1) { var isDup = supps[sIdx].bill_history && supps[sIdx].bill_history.some(b => b.bill_no === billNo); if(isDup) { alert(`⚠️ हा बिल नंबर (${billNo}) या सप्लायरच्या खात्यात आधीच जोडलेला आहे!`); return; } } }
         
-        if(suppId) {
-            var sIdx = supps.findIndex(s => s.supplier_id == suppId);
-            if(sIdx > -1) {
-                var isDup = supps[sIdx].bill_history && supps[sIdx].bill_history.some(b => b.bill_no === billNo);
-                if(isDup) { alert(`⚠️ हा बिल नंबर (${billNo}) या सप्लायरच्या खात्यात आधीच जोडलेला आहे!`); return; }
-            }
-        }
-        
-        var backupMeds = localStorage.getItem('Medicines');
-        var backupSupps = localStorage.getItem('Suppliers');
-        var backupBank = localStorage.getItem('BankTransactions');
-        var backupExp = localStorage.getItem('Expenses');
-
+        var backupMeds = localStorage.getItem('Medicines'); var backupSupps = localStorage.getItem('Suppliers'); var backupBank = localStorage.getItem('BankTransactions'); var backupExp = localStorage.getItem('Expenses');
         var purTaxable = 0, purCgst = 0, purSgst = 0;
         
         purchaseCart.forEach(item => {
@@ -499,18 +508,10 @@ function savePurchaseBill() {
             if (idx > -1) {
                 var gRate = meds[idx].gst_rate || 0;
                 if(gRate > 0) { var bVal = item.total / (1 + (gRate/100)); var tAmt = item.total - bVal; purTaxable += bVal; purCgst += tAmt/2; purSgst += tAmt/2; } else { purTaxable += item.total; }
-
-                var unitsPerPack = meds[idx].unitsPerPack || 10; 
-                var oldStock = meds[idx].stock_qty || 0; var validOldStock = oldStock > 0 ? oldStock : 0; 
-                var oldTotalValue = validOldStock * (meds[idx].purchasePrice || 0); 
-                var addedStock = (item.packQty + item.freeQty) * unitsPerPack; 
+                var unitsPerPack = meds[idx].unitsPerPack || 10; var oldStock = meds[idx].stock_qty || 0; var validOldStock = oldStock > 0 ? oldStock : 0; 
+                var oldTotalValue = validOldStock * (meds[idx].purchasePrice || 0); var addedStock = (item.packQty + item.freeQty) * unitsPerPack; 
                 var newTotalCost = item.packQty * item.ptr; var newStock = oldStock + addedStock;
-                
-                if(item.ptr > 0 && item.mrp > 0) { 
-                    var avgUnitPTR = (validOldStock + addedStock) > 0 ? ((oldTotalValue + newTotalCost) / (validOldStock + addedStock)) : (item.ptr / unitsPerPack); 
-                    var latestUnitMRP = item.mrp / unitsPerPack; 
-                    meds[idx].purchasePrice = parseFloat(avgUnitPTR.toFixed(2)); meds[idx].mrp = parseFloat(latestUnitMRP.toFixed(2)); 
-                }
+                if(item.ptr > 0 && item.mrp > 0) { var avgUnitPTR = (validOldStock + addedStock) > 0 ? ((oldTotalValue + newTotalCost) / (validOldStock + addedStock)) : (item.ptr / unitsPerPack); var latestUnitMRP = item.mrp / unitsPerPack; meds[idx].purchasePrice = parseFloat(avgUnitPTR.toFixed(2)); meds[idx].mrp = parseFloat(latestUnitMRP.toFixed(2)); }
                 meds[idx].stock_qty = newStock;
             }
         });
@@ -525,37 +526,19 @@ function savePurchaseBill() {
                 var dueDate = addDays(billDate, creditDays); var isCash = (creditDays == 0); 
                 if (!supps[sIdx].bill_history) supps[sIdx].bill_history = []; 
                 supps[sIdx].bill_history.push({ bill_no: billNo, bill_date: billDate, amount: exactPurchaseTotal, taxable: purTaxable, cgst: purCgst, sgst: purSgst, due_date: dueDate, is_paid: isCash }); 
-                
-                if(isCash) {
-                    var bId = addBankEntry(`सप्लायर रोख खरेदी: ${supps[sIdx].name} (बिल: ${billNo})`, 'OUT', exactPurchaseTotal, billDate);
-                    if(!supps[sIdx].payment_history) supps[sIdx].payment_history = [];
-                    supps[sIdx].payment_history.push({ date: billDate, amount: exactPurchaseTotal, mode: "Cash", utr: "", type: "Cash Purchase" });
-                } else { supps[sIdx].pending_dues = parseFloat((supps[sIdx].pending_dues + exactPurchaseTotal).toFixed(2)); }
+                if(isCash) { var bId = addBankEntry(`सप्लायर रोख खरेदी: ${supps[sIdx].name} (बिल: ${billNo})`, 'OUT', exactPurchaseTotal, billDate); if(!supps[sIdx].payment_history) supps[sIdx].payment_history = []; supps[sIdx].payment_history.push({ date: billDate, amount: exactPurchaseTotal, mode: "Cash", utr: "", type: "Cash Purchase" }); } else { supps[sIdx].pending_dues = parseFloat((supps[sIdx].pending_dues + exactPurchaseTotal).toFixed(2)); }
                 if(!setDB('Suppliers', supps)) dbSuccess = false; 
             }
         } else if (!suppId && exactPurchaseTotal > 0) {
              if(confirm("तुम्ही सप्लायर निवडलेला नाही. हे बिल 'रोख (Cash)' खर्च म्हणून बँकेत नोंदवायचे का?")) {
-                 var expenses = getDB('Expenses'); 
-                 expenses.push({ expense_id: new Date().getTime().toString(), category: "इतर खर्च (General)", description: `औषध खरेदी (बिल: ${billNo})`, amount: exactPurchaseTotal, expense_date: billDate, mode: "Cash" }); 
+                 var expenses = getDB('Expenses'); expenses.push({ expense_id: new Date().getTime().toString(), category: "इतर खर्च (General)", description: `औषध खरेदी (बिल: ${billNo})`, amount: exactPurchaseTotal, expense_date: billDate, mode: "Cash" }); 
                  if(!setDB('Expenses', expenses)) dbSuccess = false; else addBankEntry(`रोख खरेदी खर्च (बिल: ${billNo})`, 'OUT', exactPurchaseTotal, billDate);
              } else { return; }
         }
         
         if (dbSuccess) { dbSuccess = setDB('Medicines', meds); }
-
-        if (!dbSuccess) {
-            localStorage.setItem('Medicines', backupMeds || '[]');
-            if(backupSupps) localStorage.setItem('Suppliers', backupSupps);
-            if(backupBank) localStorage.setItem('BankTransactions', backupBank);
-            if(backupExp) localStorage.setItem('Expenses', backupExp);
-            alert("🚨 मेमरी फुल असल्यामुळे बिल सेव्ह होऊ शकले नाही. तुमचा साठा आणि सप्लायर खाते सुरक्षितपणे पूर्ववत केले आहे!");
-            return;
-        }
-
-        showMessage("✅ खरेदी बिल अचूकपणे सेव्ह झाले!", "green"); 
-        purchaseCart = []; updatePurchaseCartUI(); if(bEl) bEl.value = ""; 
-        refreshAllData(); loadPurchaseDropdown();
-        
+        if (!dbSuccess) { localStorage.setItem('Medicines', backupMeds || '[]'); if(backupSupps) localStorage.setItem('Suppliers', backupSupps); if(backupBank) localStorage.setItem('BankTransactions', backupBank); if(backupExp) localStorage.setItem('Expenses', backupExp); alert("🚨 मेमरी फुल असल्यामुळे बिल सेव्ह होऊ शकले नाही. तुमचा साठा आणि सप्लायर खाते सुरक्षितपणे पूर्ववत केले आहे!"); return; }
+        showMessage("✅ खरेदी बिल अचूकपणे सेव्ह झाले!", "green"); purchaseCart = []; updatePurchaseCartUI(); if(bEl) bEl.value = ""; refreshAllData(); loadPurchaseDropdown();
     } finally { setTimeout(() => { isProcessing = false; }, 500); }
 }
 
@@ -574,7 +557,6 @@ function loadMedicineDropdown() {
 function updatePrice() { 
     var select = document.getElementById('medicineSelect'); var typeSelect = document.getElementById('sellType'); var rackDiv = document.getElementById('rackDisplay'); var rackTxt = document.getElementById('rackNumberTxt'); 
     if (!select || select.value === "") { var sP = document.getElementById('sellPrice'); if(sP) sP.value = ""; if(rackDiv) rackDiv.style.display = "none"; lastSelectedMedId = ""; return; } 
-    
     var currentMedId = select.value; var option = select.options[select.selectedIndex]; var basePrice = parseFloat(option.getAttribute('data-price')) || 0; var packSize = parseInt(option.getAttribute('data-pack')) || 1; var unit = option.getAttribute('data-unit') || "";
     
     if (currentMedId !== lastSelectedMedId && typeSelect) {
@@ -594,12 +576,7 @@ function updatePrice() {
     var finalPrice = grossPrice - (grossPrice * (itemDisc/100)); 
     var sPEl = document.getElementById('sellPrice'); if(sPEl) sPEl.value = finalPrice.toFixed(2); 
     
-    if(rackDiv && rackTxt) { 
-        if((rackNo !== "-" && rackNo !== "") || (boxNo !== "-" && boxNo !== "")) {
-            var rText = rackNo !== "-" && rackNo !== "" ? "रॅक: " + rackNo : ""; var bText = boxNo !== "-" && boxNo !== "" ? "बॉक्स: " + boxNo : "";
-            var sep = (rText && bText) ? " | " : ""; rackTxt.innerText = rText + sep + bText; rackDiv.style.display = "block"; 
-        } else { rackDiv.style.display = "none"; } 
-    } 
+    if(rackDiv && rackTxt) { if((rackNo !== "-" && rackNo !== "") || (boxNo !== "-" && boxNo !== "")) { var rText = rackNo !== "-" && rackNo !== "" ? "रॅक: " + rackNo : ""; var bText = boxNo !== "-" && boxNo !== "" ? "बॉक्स: " + boxNo : ""; var sep = (rText && bText) ? " | " : ""; rackTxt.innerText = rText + sep + bText; rackDiv.style.display = "block"; } else { rackDiv.style.display = "none"; } } 
 }
 
 function applyDiscount() { finalCartTotal = cartTotal; var fDisp = document.getElementById('finalTotalDisplay'); if(fDisp) fDisp.innerText = "देय रक्कम: ₹" + finalCartTotal.toFixed(2); }
@@ -621,14 +598,10 @@ function addToCart() {
     var dEl = document.getElementById('medDosage'); var dosageStr = dEl ? cleanText(dEl.value) : "";
     var realQtyToDeduct = sellType === 'pack' ? (inputQty * packSize) : inputQty; 
     
-    var liveMedsDB = getDB('Medicines');
-    var liveMed = liveMedsDB.find(m => m.medicine_id == medId);
-    var availableStock = liveMed ? (liveMed.stock_qty || 0) : 0;
-    
+    var liveMedsDB = getDB('Medicines'); var liveMed = liveMedsDB.find(m => m.medicine_id == medId); var availableStock = liveMed ? (liveMed.stock_qty || 0) : 0;
     var hsnCode = option.getAttribute('data-hsn'); var gstRate = parseInt(option.getAttribute('data-gst')) || 0; var batch = option.getAttribute('data-barcode') || "-"; var unitType = option.getAttribute('data-unit') || ""; 
     
     var existingItem = cart.find(item => item.id === medId && item.batch === batch && item.sellType === sellType && item.discPercent === discPercent); 
-    
     var totalRequestedQty = existingItem ? existingItem.qty + realQtyToDeduct : realQtyToDeduct;
     if (totalRequestedQty > availableStock) { if(!confirm(`⚠️ सिस्टीममध्ये इतका साठा नाही! (उपलब्ध: ${availableStock})\nतरीही बिल बनवायचे का?`)) return; }
     
@@ -636,8 +609,7 @@ function addToCart() {
     var grossPrice = sellType === 'pack' ? (baseMRP * packSize * inputQty) : (baseMRP * inputQty); 
     var totalPrice = parseFloat((grossPrice - (grossPrice * (discPercent/100))).toFixed(2)); 
     
-    var medNameDisplay = option.text.split(' - ₹')[0].replace('(Rx) ', ''); 
-    var displayTxt = "";
+    var medNameDisplay = option.text.split(' - ₹')[0].replace('(Rx) ', ''); var displayTxt = "";
     if (unitType.includes('Bottle') || unitType.includes('बाटली')) displayTxt = ' बाटली'; else if (unitType.includes('Tube') || unitType.includes('मलम')) displayTxt = ' ट्युब'; else if (unitType.includes('Inj') || unitType.includes('इंजेक्शन')) displayTxt = sellType === 'pack' ? ' बॉक्स' : ' इंज'; else displayTxt = sellType === 'pack' ? ' स्ट्रीप' : ' गोळी';
 
     if (existingItem) { 
@@ -666,8 +638,7 @@ function removeCartItem(index) { cart.splice(index, 1); updateCartUI(); }
 function generateBill(isCredit = false) {
     if(isProcessing) return; 
     try {
-        var cnEl = document.getElementById('customerName'); 
-        var customerName = cnEl ? cleanText(cnEl.value.trim()) : ""; 
+        var cnEl = document.getElementById('customerName'); var customerName = cnEl ? cleanText(cnEl.value.trim()) : ""; 
         var drEl = document.getElementById('doctorName'); var drName = drEl ? cleanText(drEl.value) : ""; 
         var cgEl = document.getElementById('customerGstin'); var custGstin = cgEl ? cleanText(cgEl.value.toUpperCase()) : ""; 
         var pModeEl = document.getElementById('billPaymentMode'); var payMode = isCredit ? "Credit" : (pModeEl ? pModeEl.value : "Cash"); 
@@ -676,68 +647,37 @@ function generateBill(isCredit = false) {
         if (cart.length === 0 || !customerName) { alert("⚠️ कृपया ग्राहकाचे पूर्ण नाव आणि आयटम जोडा!"); return; } if (!isCredit && payMode === "UPI" && utrNo === "") { if(!confirm("⚠️ तुम्ही UPI निवडले आहे पण UTR टाकला नाही. पुढे जायचे का?")) return; }
 
         isProcessing = true; 
-        
-        var backupCusts = localStorage.getItem('Customers');
-        var custs = getDB('Customers'); 
-        var existingCust = custs.find(c => c.name && c.name.trim().toLowerCase() === customerName.toLowerCase()); 
+        var backupCusts = localStorage.getItem('Customers'); var custs = getDB('Customers'); var existingCust = custs.find(c => c.name && c.name.trim().toLowerCase() === customerName.toLowerCase()); 
         
         if (isCredit) {
             var currentBal = existingCust ? existingCust.ledger_balance : 0;
             if ((currentBal + finalCartTotal) > 50000) {
                 var auth = prompt(`⚠️ उधारीची मर्यादा (५०,०००) ओलांडली आहे!\nग्राहकाची सध्याची बाकी: ₹${currentBal.toFixed(2)}\nपरवानगीसाठी 'मालकाचा पिन (Owner PIN)' टाका:`);
                 if(auth === null || auth === "") { alert("❌ पिन टाकला नाही. बिल रद्द केले."); return; }
-                var ownerHash = localStorage.getItem('shopPinHash');
-                // In full production use async crypto, skipping for rapid prototype fallback
                 alert("🚨 Owner Override Logged.");
             }
         }
         
-        var backupMeds = localStorage.getItem('Medicines');
-        var backupSales = localStorage.getItem('Sales');
-        var backupBank = localStorage.getItem('BankTransactions');
-
-        var meds = getDB('Medicines'); var totalBillPurchaseCost = 0; var savedCart = JSON.parse(JSON.stringify(cart));
-        var stockError = false;
+        var backupMeds = localStorage.getItem('Medicines'); var backupSales = localStorage.getItem('Sales'); var backupBank = localStorage.getItem('BankTransactions');
+        var meds = getDB('Medicines'); var totalBillPurchaseCost = 0; var savedCart = JSON.parse(JSON.stringify(cart)); var stockError = false;
         
-        cart.forEach(item => { 
-            var m = meds.find(x => x.medicine_id == item.id); 
-            if(m) { 
-                if(m.stock_qty < item.qty) stockError = true; 
-                m.stock_qty -= item.qty; 
-                totalBillPurchaseCost += (item.totalPurchase || 0); 
-            } 
-        });
-        
+        cart.forEach(item => { var m = meds.find(x => x.medicine_id == item.id); if(m) { if(m.stock_qty < item.qty) stockError = true; m.stock_qty -= item.qty; totalBillPurchaseCost += (item.totalPurchase || 0); } });
         if (stockError && !confirm("⚠️ काही औषधांचा साठा उपलब्ध नाही. (स्टॉक मायनसमध्ये जाईल). तरीही बिल बनवायचे का?")) { return; }
         
         var trueProfit = parseFloat((finalCartTotal - totalBillPurchaseCost).toFixed(2)); 
         var sales = getDB('Sales'); var newBillId = generateInvoiceNumber(); 
-        
         sales.push({ bill_id: newBillId, customer_name: customerName, customer_gstin: custGstin, doctor_name: drName, bill_date: getTodayDateStr(), total_amount: finalCartTotal, bill_profit: trueProfit, items: savedCart, is_credit: isCredit, discount_amt: 0, payment_mode: payMode, utr_no: utrNo, is_cancelled: false });
         
-        var okMeds = setDB('Medicines', meds);
-        var okSales = setDB('Sales', sales);
+        var okMeds = setDB('Medicines', meds); var okSales = setDB('Sales', sales);
+        if(!okMeds || !okSales) { localStorage.setItem('Medicines', backupMeds); localStorage.setItem('Sales', backupSales); alert("🚨 मेमरी फुल असल्यामुळे बिल सेव्ह होऊ शकले नाही. तुमचा साठा सुरक्षितपणे पूर्ववत केला आहे!"); return; } 
 
-        if(!okMeds || !okSales) { 
-            localStorage.setItem('Medicines', backupMeds); localStorage.setItem('Sales', backupSales);
-            alert("🚨 मेमरी फुल असल्यामुळे बिल सेव्ह होऊ शकले नाही. तुमचा साठा सुरक्षितपणे पूर्ववत केला आहे!"); return; 
-        } 
-
-        if (!isCredit) { 
-            addBankEntry(`विक्री जमा: ${customerName} (Bill: ${newBillId})${utrNo ? ' UTR:'+utrNo : ''}`, 'IN', finalCartTotal, getTodayDateStr()); 
-        } else { 
+        if (!isCredit) { addBankEntry(`विक्री जमा: ${customerName} (Bill: ${newBillId})${utrNo ? ' UTR:'+utrNo : ''}`, 'IN', finalCartTotal, getTodayDateStr()); } 
+        else { 
             var pEntry = { date: getTodayDateStr(), amount: finalCartTotal, mode: "Credit Bill", utr: newBillId };
-            if(existingCust) { 
-                existingCust.ledger_balance = parseFloat((existingCust.ledger_balance + finalCartTotal).toFixed(2)); 
-                if(!existingCust.payment_history) existingCust.payment_history = []; existingCust.payment_history.push(pEntry);
-            } else { 
-                custs.push({customer_id: new Date().getTime().toString(), name: customerName, phone: "", ledger_balance: finalCartTotal, payment_history: [pEntry]}); 
-            } 
+            if(existingCust) { existingCust.ledger_balance = parseFloat((existingCust.ledger_balance + finalCartTotal).toFixed(2)); if(!existingCust.payment_history) existingCust.payment_history = []; existingCust.payment_history.push(pEntry); } 
+            else { custs.push({customer_id: new Date().getTime().toString(), name: customerName, phone: "", ledger_balance: finalCartTotal, payment_history: [pEntry]}); } 
             var okCusts = setDB('Customers', custs);
-            if (!okCusts) {
-                localStorage.setItem('Medicines', backupMeds); localStorage.setItem('Sales', backupSales); localStorage.setItem('Customers', backupCusts);
-                alert("🚨 मेमरी फुल! उधारी खात्यात नोंद होऊ शकली नाही. बिल रद्द केले आहे."); return;
-            }
+            if (!okCusts) { localStorage.setItem('Medicines', backupMeds); localStorage.setItem('Sales', backupSales); localStorage.setItem('Customers', backupCusts); alert("🚨 मेमरी फुल! उधारी खात्यात नोंद होऊ शकली नाही. बिल रद्द केले आहे."); return; }
             var blbl = document.getElementById('billTypeLabel'); if(blbl) blbl.style.display = "block"; showMessage("📝 उधारीचे बिल बनवले!", "red"); 
         } 
         if(!isCredit) { var blbl = document.getElementById('billTypeLabel'); if(blbl) blbl.style.display = "none"; showMessage("💵 रोख/UPI बिल यशस्वीरीत्या बनवले!", "green"); }
@@ -779,9 +719,7 @@ function printInvoice() {
 
 function calculateFinancialDashboard() {
     var sales = getDB('Sales'); var expenses = getDB('Expenses'); 
-    var todayStr = getTodayDateStr(); 
-    var todaySales = 0, todayExp = 0, todayProfit = 0; 
-    var totalSales = 0, totalExp = 0, totalProfit = 0; 
+    var todayStr = getTodayDateStr(); var todaySales = 0, todayExp = 0, todayProfit = 0; var totalSales = 0, totalExp = 0, totalProfit = 0; 
     
     sales.forEach(s => { 
         if(s.is_cancelled) return; 
@@ -913,7 +851,6 @@ function confirmPaymentModal() {
                 supps[idx].pending_dues = parseFloat((supps[idx].pending_dues - amount).toFixed(2)); 
                 if(!supps[idx].payment_history) supps[idx].payment_history = []; supps[idx].payment_history.push(pEntry); 
                 
-                // 💡 Security Fix 1: FIFO Bill Settlement (जुन्या बिलांना Paid करत जाणे)
                 var remainingPayment = amount;
                 if(supps[idx].bill_history) {
                     for(var i=0; i<supps[idx].bill_history.length; i++) {
@@ -921,7 +858,7 @@ function confirmPaymentModal() {
                         if(!b.is_paid && remainingPayment > 0) {
                             var billAmt = parseFloat(b.amount);
                             if(remainingPayment >= billAmt) { b.is_paid = true; remainingPayment -= billAmt; } 
-                            else { remainingPayment = 0; /* Partial payment logic can be expanded here */ }
+                            else { remainingPayment = 0; }
                         }
                     }
                 }
@@ -1031,7 +968,6 @@ function downloadRealFile(content, fileName, mimeType) {
     setTimeout(function() { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 0);
 }
 
-// 📄 CA रिपोर्ट (Excel / TSV)
 function exportCAExcel() {
     var sales = getDB('Sales'); var expenses = getDB('Expenses'); var meds = getDB('Medicines'); var bank = getDB('BankTransactions'); var supps = getDB('Suppliers');
     var cleanEx = function(str) { return str ? str.toString().replace(/[\n\r\t]/g, " ").trim() : "-"; };
@@ -1045,18 +981,12 @@ function exportCAExcel() {
         var utr = cleanEx(s.utr_no); var cGstin = cleanEx(s.customer_gstin); 
         var status = s.is_cancelled ? "CANCELLED" : "OK"; 
         var saleType = (cGstin !== "-") ? "B2B" : "B2CS"; 
-        
         var totalTaxable = 0, totalCgst = 0, totalSgst = 0;
         
         if(!s.is_cancelled && s.items) { 
             s.items.forEach(item => { 
                 var baseVal = item.total;
-                if(item.gst_rate > 0) { 
-                    baseVal = item.total / (1 + (item.gst_rate/100)); 
-                    var taxAmt = item.total - baseVal; 
-                    totalTaxable += baseVal; totalCgst += taxAmt/2; totalSgst += taxAmt/2; 
-                } else { totalTaxable += item.total; }
-                
+                if(item.gst_rate > 0) { baseVal = item.total / (1 + (item.gst_rate/100)); var taxAmt = item.total - baseVal; totalTaxable += baseVal; totalCgst += taxAmt/2; totalSgst += taxAmt/2; } else { totalTaxable += item.total; }
                 var hsn = cleanEx(item.hsn);
                 if(!hsnSummary[hsn]) hsnSummary[hsn] = { taxable: 0, cgst: 0, sgst: 0, total: 0 };
                 hsnSummary[hsn].taxable += baseVal; 
@@ -1073,10 +1003,7 @@ function exportCAExcel() {
         if(s.bill_history) { 
             s.bill_history.forEach(b => { 
                 if(!b.is_opening) { 
-                    var st = b.is_paid ? "Cash Paid" : "Unpaid"; 
-                    var tVal = b.taxable ? parseFloat(b.taxable).toFixed(2) : "-"; 
-                    var cg = b.cgst ? parseFloat(b.cgst).toFixed(2) : "-"; 
-                    var sg = b.sgst ? parseFloat(b.sgst).toFixed(2) : "-"; 
+                    var st = b.is_paid ? "Cash Paid" : "Unpaid"; var tVal = b.taxable ? parseFloat(b.taxable).toFixed(2) : "-"; var cg = b.cgst ? parseFloat(b.cgst).toFixed(2) : "-"; var sg = b.sgst ? parseFloat(b.sgst).toFixed(2) : "-"; 
                     tsvContent += `${cleanEx(b.bill_date)}\t${sName}\t${sGstin}\t${cleanEx(b.bill_no)}\t${st}\t${tVal}\t${cg}\t${sg}\t${parseFloat(b.amount||0).toFixed(2)}\n`; 
                 } 
             }); 
@@ -1093,13 +1020,8 @@ function exportCAExcel() {
     var tCash = 0, tBank = 0; 
     bank.forEach(b => { 
         var isBank = b.description.includes('UPI'); var amt = parseFloat(b.amount||0); var desc = cleanEx(b.description);
-        if(b.type === 'IN') { 
-            if(isBank) { tBank += amt; tsvContent += `${cleanEx(b.date)}\t${desc}\t-\t-\t${amt.toFixed(2)}\t-\n`; } 
-            else { tCash += amt; tsvContent += `${cleanEx(b.date)}\t${desc}\t${amt.toFixed(2)}\t-\t-\t-\n`; } 
-        } else { 
-            if(isBank) { tBank -= amt; tsvContent += `${cleanEx(b.date)}\t${desc}\t-\t-\t-\t${amt.toFixed(2)}\n`; } 
-            else { tCash -= amt; tsvContent += `${cleanEx(b.date)}\t${desc}\t-\t${amt.toFixed(2)}\t-\t-\n`; } 
-        }
+        if(b.type === 'IN') { if(isBank) { tBank += amt; tsvContent += `${cleanEx(b.date)}\t${desc}\t-\t-\t${amt.toFixed(2)}\t-\n`; } else { tCash += amt; tsvContent += `${cleanEx(b.date)}\t${desc}\t${amt.toFixed(2)}\t-\t-\t-\n`; } } 
+        else { if(isBank) { tBank -= amt; tsvContent += `${cleanEx(b.date)}\t${desc}\t-\t-\t-\t${amt.toFixed(2)}\n`; } else { tCash -= amt; tsvContent += `${cleanEx(b.date)}\t${desc}\t-\t${amt.toFixed(2)}\t-\t-\n`; } }
     }); 
     tsvContent += `\tएकूण (Total Balances):\t\tरोख (Cash): ${tCash.toFixed(2)}\tबँक (Bank): ${tBank.toFixed(2)}\n`;
     
@@ -1115,13 +1037,9 @@ function exportCAExcel() {
     showMessage("✅ CA रिपोर्ट फाईल डाऊनलोड झाली!", "green");
 }
 
-// 💾 डेटा बॅकअप व रिस्टोअर
 function exportData() { 
     try {
-        var backupData = { 
-            medicines: getDB('Medicines'), sales: getDB('Sales'), customers: getDB('Customers'), suppliers: getDB('Suppliers'), expenses: getDB('Expenses'), staff: getDB('Staff'), bank: getDB('BankTransactions'), lastInvoiceNo: localStorage.getItem('lastInvoiceNo') || '0',
-            shopName: localStorage.getItem('shopName') || "", shopAddress: localStorage.getItem('shopAddress') || "", shopPhone: localStorage.getItem('shopPhone') || "", shopGstin: localStorage.getItem('shopGstin') || "", shopPinHash: localStorage.getItem('shopPinHash') || "", staffPinHash: localStorage.getItem('staffPinHash') || ""
-        }; 
+        var backupData = { medicines: getDB('Medicines'), sales: getDB('Sales'), customers: getDB('Customers'), suppliers: getDB('Suppliers'), expenses: getDB('Expenses'), staff: getDB('Staff'), bank: getDB('BankTransactions'), lastInvoiceNo: localStorage.getItem('lastInvoiceNo') || '0', shopName: localStorage.getItem('shopName') || "", shopAddress: localStorage.getItem('shopAddress') || "", shopPhone: localStorage.getItem('shopPhone') || "", shopGstin: localStorage.getItem('shopGstin') || "", shopPinHash: localStorage.getItem('shopPinHash') || "", staffPinHash: localStorage.getItem('staffPinHash') || "" }; 
         downloadRealFile(JSON.stringify(backupData), `MedicalApp_Backup_${getTodayDateStr()}.json`, "application/json");
         showMessage("✅ संपूर्ण डेटाबेस सुरक्षितपणे डाऊनलोड झाला!", "green");
     } catch(err) { alert("🚨 बॅकअप घेताना तांत्रिक अडचण आली."); }
@@ -1135,27 +1053,12 @@ function importData() {
             var reader = new FileReader(); 
             reader.onload = function(e) { 
                 try { 
-                    var data = JSON.parse(e.target.result); 
-                    var backupSnapshot = JSON.stringify(localStorage);
+                    var data = JSON.parse(e.target.result); var backupSnapshot = JSON.stringify(localStorage);
                     try {
-                        if(data.medicines) localStorage.setItem('Medicines', JSON.stringify(data.medicines)); 
-                        if(data.sales) localStorage.setItem('Sales', JSON.stringify(data.sales)); 
-                        if(data.customers) localStorage.setItem('Customers', JSON.stringify(data.customers)); 
-                        if(data.suppliers) localStorage.setItem('Suppliers', JSON.stringify(data.suppliers)); 
-                        if(data.expenses) localStorage.setItem('Expenses', JSON.stringify(data.expenses)); 
-                        if(data.staff) localStorage.setItem('Staff', JSON.stringify(data.staff)); 
-                        if(data.bank) localStorage.setItem('BankTransactions', JSON.stringify(data.bank)); 
-                        if(data.lastInvoiceNo) localStorage.setItem('lastInvoiceNo', data.lastInvoiceNo); 
-                        if(data.shopName) localStorage.setItem('shopName', data.shopName);
-                        if(data.shopAddress) localStorage.setItem('shopAddress', data.shopAddress);
-                        if(data.shopPhone) localStorage.setItem('shopPhone', data.shopPhone);
-                        if(data.shopGstin) localStorage.setItem('shopGstin', data.shopGstin);
-                        if(data.shopPinHash) localStorage.setItem('shopPinHash', data.shopPinHash);
-                        if(data.staffPinHash) localStorage.setItem('staffPinHash', data.staffPinHash);
+                        if(data.medicines) localStorage.setItem('Medicines', JSON.stringify(data.medicines)); if(data.sales) localStorage.setItem('Sales', JSON.stringify(data.sales)); if(data.customers) localStorage.setItem('Customers', JSON.stringify(data.customers)); if(data.suppliers) localStorage.setItem('Suppliers', JSON.stringify(data.suppliers)); if(data.expenses) localStorage.setItem('Expenses', JSON.stringify(data.expenses)); if(data.staff) localStorage.setItem('Staff', JSON.stringify(data.staff)); if(data.bank) localStorage.setItem('BankTransactions', JSON.stringify(data.bank)); if(data.lastInvoiceNo) localStorage.setItem('lastInvoiceNo', data.lastInvoiceNo); if(data.shopName) localStorage.setItem('shopName', data.shopName); if(data.shopAddress) localStorage.setItem('shopAddress', data.shopAddress); if(data.shopPhone) localStorage.setItem('shopPhone', data.shopPhone); if(data.shopGstin) localStorage.setItem('shopGstin', data.shopGstin); if(data.shopPinHash) localStorage.setItem('shopPinHash', data.shopPinHash); if(data.staffPinHash) localStorage.setItem('staffPinHash', data.staffPinHash);
                         alert("✅ संपूर्ण डेटा आणि दुकान सेटिंग्ज अचूक रिस्टोअर झाल्या!"); location.reload(); 
                     } catch (quotaErr) {
-                        var oldData = JSON.parse(backupSnapshot);
-                        for (var key in oldData) { if (oldData.hasOwnProperty(key)) { localStorage.setItem(key, oldData[key]); } }
+                        var oldData = JSON.parse(backupSnapshot); for (var key in oldData) { if (oldData.hasOwnProperty(key)) { localStorage.setItem(key, oldData[key]); } }
                         alert("🚨 मोबाईलची मेमरी फुल असल्यामुळे रिस्टोअर फेल झाले. तुमचा जुना डेटा सुरक्षितपणे पूर्ववत केला आहे!"); location.reload();
                     }
                 } catch(err) { showMessage("❌ फाईल चुकीची आहे किंवा करप्ट झाली आहे!", "red"); } 
@@ -1169,7 +1072,6 @@ function showTab(tabId, element) {
     if (currentUserRole === 'staff' && tabId !== 'billingTab' && tabId !== 'ledgerTab') { alert("🔒 कर्मचाऱ्यांना हा विभाग पाहण्याची परवानगी नाही."); return; } 
     if (billingScanner) { billingScanner.clear().then(() => { var qr = document.getElementById('qr-reader'); if(qr) qr.style.display = "none"; billingScanner = null; }).catch(e => console.warn("Scanner stop issue", e)); }
     if (purchaseScanner) { purchaseScanner.clear().then(() => { var pQr = document.getElementById('qr-reader-purchase'); if(pQr) pQr.style.display = "none"; purchaseScanner = null; }).catch(e => console.warn("Scanner stop issue", e)); }
-
     var tabs = document.getElementsByClassName('tab-content'); for(var i=0; i<tabs.length; i++) { tabs[i].classList.remove('active-tab'); } 
     var selectedTab = document.getElementById(tabId); if(selectedTab) selectedTab.classList.add('active-tab'); 
     var navBtns = document.querySelectorAll('.bottom-nav button'); for(var i=0; i<navBtns.length; i++) { navBtns[i].classList.remove('active-nav'); } 
